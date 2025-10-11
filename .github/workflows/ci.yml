@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run tests
+        run: cargo test --verbose
+
+      - name: Check code formatting
+        run: cargo fmt --check
+
+      - name: Run clippy lints
+        run: cargo clippy -- -D warnings
+
+  build:
+    name: Build and Integration Test
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build release binary
+        run: cargo build --release --verbose
+
+      - name: Test embedding and extraction with cat.pdf
+        run: |
+          ./target/release/enigma embed examples/cat.pdf examples/message.txt examples/out.pdf
+          ./target/release/enigma extract examples/out.pdf examples/extracted.txt
+          if diff examples/message.txt examples/extracted.txt; then
+            echo "✅ Integration test passed - embed/extract cycle works correctly"
+          else
+            echo "❌ Integration test failed - extracted content doesn't match original"
+            exit 1
+          fi
+
+      - name: Verify PDF file is still valid
+        run: |
+          # Check that the embedded PDF still has proper PDF structure
+          if head -1 examples/out.pdf | grep -q "%PDF"; then
+            echo "✅ Output file has valid PDF header"
+          else
+            echo "❌ Output file missing PDF header"
+            exit 1
+          fi
+
+          if tail -c 100 examples/out.pdf | grep -q "%%EOF"; then
+            echo "✅ Output file has valid PDF EOF marker"
+          else
+            echo "❌ Output file missing PDF EOF marker"
+            exit 1
+          fi
+
+  cross-platform:
+    name: Cross Platform Build
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Run basic test
+        shell: bash
+        run: |
+          # Test embedding (use different syntax for Windows vs Unix)
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            ./target/release/enigma.exe embed examples/cat.pdf examples/message.txt examples/out.pdf
+            ./target/release/enigma.exe extract examples/out.pdf examples/extracted.txt
+          else
+            ./target/release/enigma embed examples/cat.pdf examples/message.txt examples/out.pdf
+            ./target/release/enigma extract examples/out.pdf examples/extracted.txt
+          fi
+
+          # Verify content
+          if diff examples/message.txt examples/extracted.txt; then
+            echo "✅ Cross-platform test passed on ${{ matrix.os }}"
+          else
+            echo "❌ Cross-platform test failed on ${{ matrix.os }}"
+            exit 1
+          fi
