@@ -8,7 +8,7 @@ repository = "https://github.com/niclashedam/lupin"
 homepage = "https://github.com/niclashedam/lupin"
 documentation = "https://docs.rs/lupin"
 readme = "README.md"
-keywords = ["steganography", "pdf", "stego", "data-hiding", "cli", "rust"]
+keywords = ["steganography", "pdf", "privacy", "cli"]
 categories = ["command-line-utilities", "security"]
 authors = ["Niclas Hedam"]
 

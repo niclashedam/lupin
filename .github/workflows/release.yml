@@ -12,6 +12,7 @@ env:
 jobs:
   create-release:
     name: Create Release
+    permissions: write-all
     runs-on: ubuntu-latest
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
@@ -27,10 +28,6 @@ jobs:
           body: |
             ## Changes
 
-            - PDF steganography tool for embedding binary data
-            - Supports embed and extract operations
-            - Cross-platform binary builds
-
             ## Usage
 
             ```bash
@@ -45,6 +42,7 @@ jobs:
 
   build-release:
     name: Build Release Binaries
+    permissions: write-all
     needs: create-release
     strategy:
       matrix:
@@ -92,6 +90,7 @@ jobs:
 
   publish-crates:
     name: Publish to crates.io
+    permissions: write-all
     needs: build-release
     runs-on: ubuntu-latest
     steps:
