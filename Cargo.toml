@@ -11,6 +11,7 @@ readme = "README.md"
 keywords = ["steganography", "pdf", "privacy", "cli"]
 categories = ["command-line-utilities", "security"]
 authors = ["Niclas Hedam"]
+exclude = ["/examples"]
 
 [dependencies]
 base64 = "0.21"
