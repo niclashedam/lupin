@@ -65,8 +65,8 @@ jobs:
 
       - name: Test embedding and extraction with cat.pdf
         run: |
-          ./target/release/enigma embed examples/cat.pdf examples/message.txt examples/out.pdf
-          ./target/release/enigma extract examples/out.pdf examples/extracted.txt
+          ./target/release/lupin embed examples/cat.pdf examples/message.txt examples/out.pdf
+          ./target/release/lupin extract examples/out.pdf examples/extracted.txt
           if diff examples/message.txt examples/extracted.txt; then
             echo "✅ Integration test passed - embed/extract cycle works correctly"
           else
@@ -113,11 +113,11 @@ jobs:
         run: |
           # Test embedding (use different syntax for Windows vs Unix)
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            ./target/release/enigma.exe embed examples/cat.pdf examples/message.txt examples/out.pdf
-            ./target/release/enigma.exe extract examples/out.pdf examples/extracted.txt
+            ./target/release/lupin.exe embed examples/cat.pdf examples/message.txt examples/out.pdf
+            ./target/release/lupin.exe extract examples/out.pdf examples/extracted.txt
           else
-            ./target/release/enigma embed examples/cat.pdf examples/message.txt examples/out.pdf
-            ./target/release/enigma extract examples/out.pdf examples/extracted.txt
+            ./target/release/lupin embed examples/cat.pdf examples/message.txt examples/out.pdf
+            ./target/release/lupin extract examples/out.pdf examples/extracted.txt
           fi
 
           # Verify content

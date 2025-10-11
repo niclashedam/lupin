@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Enigma is a steganography tool for hiding data in PDF files
+// Lupin is a steganography tool for hiding data in PDF files
 //
 // PDFs end with %%EOF, but viewers ignore anything after that.
 // We append a base64-encoded payload after the EOF marker.
 // Most PDF readers will still open the file normally, but we can extract our data later.
 
-use enigma::operations::{embed, extract};
+use lupin::operations::{embed, extract};
 use std::env;
 use std::io;
 use std::path::Path;
