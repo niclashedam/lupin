@@ -75,6 +75,11 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Set version
+        run: |
+          cargo install cargo-v --locked
+          cargo v $(git describe --exact-match --tags | sed 's/^v//') -y
+
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target }}
 
@@ -100,6 +105,11 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Set version
+        run: |
+          cargo install cargo-v --locked
+          cargo v $(git describe --exact-match --tags | sed 's/^v//') -y
+
       - name: Set up registry token
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
@@ -113,5 +123,4 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
-          # Ensure the version in Cargo.toml matches the tag, if you want stricter checks add parsing here
-          cargo publish --token "$CARGO_REGISTRY_TOKEN"
+          cargo publish --token "$CARGO_REGISTRY_TOKEN" --allow-dirty
