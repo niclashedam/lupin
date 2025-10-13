@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/niclashedam/lupin/workflows/CI/badge.svg)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
-![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)
+![Rust](https://img.shields.io/badge/rust-1.48%2B-orange.svg)
 
 A blazing-fast, lightweight steganography tool for concealing data inside PDF files. Lupin exploits the fact that PDF viewers ignore content after the `%%EOF` marker, allowing arbitrary payloads to be appended to a document without affecting how it is displayed by standard PDF readers.
 
@@ -90,7 +90,7 @@ lupin extract presentation_with_secrets.pdf - | unzip -
 
 ### Prerequisites
 
-- Rust 1.70 or later
+- Rust 1.48 or later
 - Cargo (included with Rust)
 
 ### Build commands

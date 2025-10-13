@@ -39,7 +39,7 @@ pub mod pdf_parser {
 }
 
 pub mod payload_operations {
-    use base64::{Engine as _, engine::general_purpose};
+    use base64::{engine::general_purpose, Engine as _};
     use std::io;
 
     // Takes a PDF and payload, returns the combined data with payload embedded
