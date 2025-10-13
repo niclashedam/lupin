@@ -90,7 +90,16 @@ jobs:
             echo "❌ Output file missing PDF EOF marker"
             exit 1
           fi
-
+      - name: Verify embedded content can be extracted via command line
+        run: |
+          # Extract the last line of the PDF which contains the embedded data and decode
+          tail -n 1 examples/out.pdf | cut -c 6- | base64 -d > examples/cli_extracted.txt
+          if diff examples/message.txt examples/cli_extracted.txt; then
+            echo "✅ CLI extraction test passed - embedded content matches original"
+          else
+            echo "❌ CLI extraction test failed - extracted content doesn't match original"
+            exit 1
+          fi
   cross-platform:
     name: Cross Platform Build
     strategy:

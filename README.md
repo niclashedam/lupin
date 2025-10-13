@@ -35,7 +35,12 @@ lupin extract output.pdf recovered_secret.txt
 
 # Extract to stdout (useful for piping)
 lupin extract output.pdf -
+
+# Extract without using Lupin (using standard tools)
+tail -n 1 examples/out.pdf | cut -c 6- | base64 -d
 ```
+
+While extraction can be done with standard tools, we recommend using Lupin to ensure compatibility.
 
 ## 🔧 How it works
 
