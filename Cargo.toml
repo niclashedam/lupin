@@ -1,17 +1,26 @@
 [package]
 name = "lupin"
 version = "0.0.0"
-edition = "2024"
-description = "A lightweight steganography tool for hiding binary data inside PDF files."
+edition = "2018"
+rust-version = "1.48"
+description = "A blazing-fast steganography tool for concealing data inside PDF files"
 license = "Apache-2.0"
 repository = "https://github.com/niclashedam/lupin"
 homepage = "https://github.com/niclashedam/lupin"
 documentation = "https://docs.rs/lupin"
 readme = "README.md"
-keywords = ["steganography", "pdf", "privacy", "cli"]
-categories = ["command-line-utilities", "security"]
-authors = ["Niclas Hedam"]
-exclude = ["/examples"]
+keywords = ["steganography", "pdf", "privacy", "cli", "security"]
+categories = ["command-line-utilities", "cryptography"]
+authors = ["Niclas Hedam <lupin@sl.hed.am>"]
+exclude = ["/examples", "/target", "*.pdf"]
+
+[[bin]]
+name = "lupin"
+path = "src/main.rs"
+
+[lib]
+name = "lupin"
+path = "src/lib.rs"
 
 [dependencies]
-base64 = "0.21"
+base64 = "0.22"
