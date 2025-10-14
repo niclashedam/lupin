@@ -32,7 +32,7 @@ impl CommandHandler for HelpCommand {
             .collect::<Vec<_>>()
             .join(", ");
 
-        eprintln!(
+        println!(
             "{}\n\
              {1} [OPTIONS] <COMMAND> [ARGS...]\n\
              \n\

@@ -33,7 +33,7 @@ impl OutputFormatter {
     /// Print info messages (only in verbose mode, unless quiet)
     pub fn info(&self, message: &str) {
         if self.verbose && !self.quiet {
-            eprintln!("{}", message);
+            println!("{}", message);
         }
     }
 
