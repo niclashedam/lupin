@@ -26,33 +26,22 @@ pub struct ExtractCommand {
 }
 
 impl CommandHandler for ExtractCommand {
-    fn execute(&self, formatter: &OutputFormatter, verbose: bool) -> Result<(), Box<dyn Error>> {
+    fn execute(&self, formatter: &OutputFormatter) -> Result<(), Box<dyn Error>> {
         // Print file paths in verbose mode
-        formatter.verbose_println(
-            verbose,
-            &format!(
-                "Source PDF: {}",
-                formatter.path(&self.src.display().to_string())
-            ),
-        );
-        formatter.verbose_println(
-            verbose,
-            &format!(
-                "Output file: {}",
-                formatter.path(&self.output.display().to_string())
-            ),
-        );
+        formatter.info(&format!(
+            "Source PDF: {}",
+            formatter.path(&self.src.display().to_string())
+        ));
+        formatter.info(&format!(
+            "Output file: {}",
+            formatter.path(&self.output.display().to_string())
+        ));
 
         // Execute the extract operation
         operations::extract(&self.src, &self.output, formatter)?;
 
-        // Print success message in verbose mode
-        formatter.verbose_println(
-            verbose,
-            &formatter
-                .success("Successfully extracted payload from PDF")
-                .to_string(),
-        );
+        // Print success message
+        formatter.success("Successfully extracted payload from PDF.");
 
         Ok(())
     }

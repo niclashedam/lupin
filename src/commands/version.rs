@@ -21,7 +21,7 @@ use std::error::Error;
 pub struct VersionCommand;
 
 impl CommandHandler for VersionCommand {
-    fn execute(&self, formatter: &OutputFormatter, _verbose: bool) -> Result<(), Box<dyn Error>> {
+    fn execute(&self, formatter: &OutputFormatter) -> Result<(), Box<dyn Error>> {
         formatter.println(&format!("lupin {}", env!("CARGO_PKG_VERSION")));
         Ok(())
     }

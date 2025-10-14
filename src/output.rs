@@ -18,40 +18,58 @@ use colored::*;
 pub struct OutputFormatter {
     use_colors: bool,
     quiet: bool,
+    verbose: bool,
 }
 
 impl OutputFormatter {
-    pub fn new(use_colors: bool, quiet: bool) -> Self {
-        Self { use_colors, quiet }
+    pub fn new(use_colors: bool, quiet: bool, verbose: bool) -> Self {
+        Self {
+            use_colors,
+            quiet,
+            verbose,
+        }
     }
 
+    /// Print info messages (only in verbose mode, unless quiet)
+    pub fn info(&self, message: &str) {
+        if self.verbose && !self.quiet {
+            eprintln!("{}", message);
+        }
+    }
+
+    /// Print success messages (unless quiet mode)
+    pub fn success(&self, message: &str) {
+        if !self.quiet {
+            let colored_msg = if self.use_colors {
+                message.bright_green().bold()
+            } else {
+                message.normal()
+            };
+            println!("{}", colored_msg);
+        }
+    }
+
+    /// Print error messages (always, not affected by quiet mode)
+    pub fn error(&self, message: &str) {
+        let colored_msg = if self.use_colors {
+            message.bright_red().bold()
+        } else {
+            message.normal()
+        };
+        eprintln!("{}", colored_msg);
+    }
+
+    /// Print regular output messages (suppressed in quiet mode)
+    pub fn println(&self, message: &str) {
+        if !self.quiet {
+            println!("{}", message);
+        }
+    }
+
+    /// Helper methods for colored strings (for cases where you need the ColoredString)
     pub fn header(&self, text: &str) -> ColoredString {
         if self.use_colors {
             text.bright_cyan().bold()
-        } else {
-            text.normal()
-        }
-    }
-
-    pub fn error(&self, text: &str) -> ColoredString {
-        if self.use_colors {
-            text.bright_red().bold()
-        } else {
-            text.normal()
-        }
-    }
-
-    pub fn success(&self, text: &str) -> ColoredString {
-        if self.use_colors {
-            text.bright_green().bold()
-        } else {
-            text.normal()
-        }
-    }
-
-    pub fn info(&self, text: &str) -> ColoredString {
-        if self.use_colors {
-            text.bright_blue()
         } else {
             text.normal()
         }
@@ -73,22 +91,22 @@ impl OutputFormatter {
         }
     }
 
-    /// Print verbose messages only if verbose is enabled and not quiet
-    pub fn verbose_println(&self, verbose: bool, message: &str) {
-        if verbose && !self.quiet {
-            eprintln!("{}", message);
-        }
-    }
+    pub fn size(&self, size: usize) -> ColoredString {
+        // print the size in a human-readable format
+        let text = if size < 1024 {
+            format!("{} B", size)
+        } else if size < 1024 * 1024 {
+            format!("{:.2} KiB", size as f64 / 1024.0)
+        } else if size < 1024 * 1024 * 1024 {
+            format!("{:.2} MiB", size as f64 / (1024.0 * 1024.0))
+        } else {
+            format!("{:.2} GiB", size as f64 / (1024.0 * 1024.0 * 1024.0))
+        };
 
-    /// Always print errors (not affected by quiet mode)
-    pub fn error_println(&self, message: &str) {
-        eprintln!("{}", message);
-    }
-
-    /// Print regular output messages (suppressed in quiet mode)
-    pub fn println(&self, message: &str) {
-        if !self.quiet {
-            println!("{}", message);
+        if self.use_colors {
+            text.bright_magenta()
+        } else {
+            text.normal()
         }
     }
 }

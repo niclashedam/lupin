@@ -31,15 +31,11 @@ pub fn embed(
     let source_bytes = match read_file(src_file) {
         Ok(bytes) => bytes,
         Err(e) => {
-            formatter.error_println(
-                &formatter
-                    .error(&format!(
-                        "Failed to read source file '{}': {}",
-                        src_file.display(),
-                        e
-                    ))
-                    .to_string(),
-            );
+            formatter.error(&format!(
+                "Failed to read source file '{}': {}",
+                src_file.display(),
+                e
+            ));
             return Err(e);
         }
     };
@@ -47,15 +43,11 @@ pub fn embed(
     let payload_bytes = match read_file(payload) {
         Ok(bytes) => bytes,
         Err(e) => {
-            formatter.error_println(
-                &formatter
-                    .error(&format!(
-                        "Failed to read payload file '{}': {}",
-                        payload.display(),
-                        e
-                    ))
-                    .to_string(),
-            );
+            formatter.error(&format!(
+                "Failed to read payload file '{}': {}",
+                payload.display(),
+                e
+            ));
             return Err(e);
         }
     };
@@ -63,11 +55,7 @@ pub fn embed(
     let engine = match router.detect_engine(&source_bytes) {
         Ok(engine) => engine,
         Err(e) => {
-            formatter.error_println(
-                &formatter
-                    .error(&format!("Engine detection failed: {}", e))
-                    .to_string(),
-            );
+            formatter.error(&format!("Engine detection failed: {}", e));
             return Err(e);
         }
     };
@@ -75,34 +63,28 @@ pub fn embed(
     let output_data = match engine.embed(&source_bytes, &payload_bytes) {
         Ok(data) => data,
         Err(e) => {
-            formatter.error_println(
-                &formatter
-                    .error(&format!("Embedding failed: {}", e))
-                    .to_string(),
-            );
+            formatter.error(&format!("Embedding failed: {}", e));
             return Err(e);
         }
     };
 
     if let Err(e) = write_file(out_file, &output_data) {
-        formatter.error_println(
-            &formatter
-                .error(&format!(
-                    "Failed to write output file '{}': {}",
-                    out_file.display(),
-                    e
-                ))
-                .to_string(),
-        );
+        formatter.error(&format!(
+            "Failed to write output file '{}': {}",
+            out_file.display(),
+            e
+        ));
         return Err(e);
     }
 
-    formatter.println(&format!(
-        "✅ Embedded {} bytes into {} ({}), saved as {}",
-        payload_bytes.len(),
-        src_file.display(),
+    formatter.info(&format!(
+        "Embedded {} bytes into {} ({}). Increased by {}% from {} to {} bytes.",
+        formatter.size(payload_bytes.len()),
+        formatter.path(&src_file.display().to_string()),
         engine.format_name(),
-        out_file.display()
+        (output_data.len() as f64 / source_bytes.len() as f64 * 100.0 - 100.0).round(),
+        formatter.size(source_bytes.len()),
+        formatter.size(output_data.len())
     ));
     Ok(())
 }
@@ -113,15 +95,11 @@ pub fn extract(src_file: &Path, out_file: &Path, formatter: &OutputFormatter) ->
     let data = match read_file(src_file) {
         Ok(data) => data,
         Err(e) => {
-            formatter.error_println(
-                &formatter
-                    .error(&format!(
-                        "Failed to read source file '{}': {}",
-                        src_file.display(),
-                        e
-                    ))
-                    .to_string(),
-            );
+            formatter.error(&format!(
+                "Failed to read source file '{}': {}",
+                src_file.display(),
+                e
+            ));
             return Err(e);
         }
     };
@@ -129,11 +107,7 @@ pub fn extract(src_file: &Path, out_file: &Path, formatter: &OutputFormatter) ->
     let engine = match router.detect_engine(&data) {
         Ok(engine) => engine,
         Err(e) => {
-            formatter.error_println(
-                &formatter
-                    .error(&format!("Engine detection failed: {}", e))
-                    .to_string(),
-            );
+            formatter.error(&format!("Engine detection failed: {}", e));
             return Err(e);
         }
     };
@@ -141,11 +115,7 @@ pub fn extract(src_file: &Path, out_file: &Path, formatter: &OutputFormatter) ->
     let payload = match engine.extract(&data) {
         Ok(payload) => payload,
         Err(e) => {
-            formatter.error_println(
-                &formatter
-                    .error(&format!("Extraction failed: {}", e))
-                    .to_string(),
-            );
+            formatter.error(&format!("Extraction failed: {}", e));
             return Err(e);
         }
     };
@@ -153,32 +123,23 @@ pub fn extract(src_file: &Path, out_file: &Path, formatter: &OutputFormatter) ->
     // Special case: "-" means write to stdout
     if out_file.as_os_str() == "-" {
         if let Err(e) = io::stdout().write_all(&payload) {
-            formatter.error_println(
-                &formatter
-                    .error(&format!("Failed to write to stdout: {}", e))
-                    .to_string(),
-            );
+            formatter.error(&format!("Failed to write to stdout: {}", e));
             return Err(e);
         }
     } else {
         if let Err(e) = write_file(out_file, &payload) {
-            formatter.error_println(
-                &formatter
-                    .error(&format!(
-                        "Failed to write output file '{}': {}",
-                        out_file.display(),
-                        e
-                    ))
-                    .to_string(),
-            );
+            formatter.error(&format!(
+                "Failed to write output file '{}': {}",
+                out_file.display(),
+                e
+            ));
             return Err(e);
         }
-        formatter.println(&format!(
-            "✅ Extracted {} bytes from {} ({}), saved as {}",
-            payload.len(),
-            src_file.display(),
+        formatter.info(&format!(
+            "Extracted {} bytes from {} ({}).",
+            formatter.size(payload.len()),
+            formatter.path(&src_file.display().to_string()),
             engine.format_name(),
-            out_file.display()
         ));
     }
     Ok(())

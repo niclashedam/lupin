@@ -27,40 +27,20 @@ pub struct EmbedCommand {
 }
 
 impl CommandHandler for EmbedCommand {
-    fn execute(&self, formatter: &OutputFormatter, verbose: bool) -> Result<(), Box<dyn Error>> {
+    fn execute(&self, formatter: &OutputFormatter) -> Result<(), Box<dyn Error>> {
         // Print file paths in verbose mode
-        formatter.verbose_println(
-            verbose,
-            &format!(
-                "Source PDF: {}",
-                formatter.path(&self.src.display().to_string())
-            ),
-        );
-        formatter.verbose_println(
-            verbose,
-            &format!(
-                "Payload file: {}",
-                formatter.path(&self.payload.display().to_string())
-            ),
-        );
-        formatter.verbose_println(
-            verbose,
-            &format!(
-                "Output PDF: {}",
-                formatter.path(&self.output.display().to_string())
-            ),
-        );
+        formatter.info(&format!(
+            "Input files: {}, {}, {}",
+            formatter.path(&self.src.display().to_string()),
+            formatter.path(&self.payload.display().to_string()),
+            formatter.path(&self.output.display().to_string())
+        ));
 
         // Execute the embed operation
         operations::embed(&self.src, &self.payload, &self.output, formatter)?;
 
-        // Print success message in verbose mode
-        formatter.verbose_println(
-            verbose,
-            &formatter
-                .success("Successfully embedded payload into PDF")
-                .to_string(),
-        );
+        // Print success message
+        formatter.success("Successfully embedded payload into PDF.");
 
         Ok(())
     }

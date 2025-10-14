@@ -36,13 +36,10 @@ fn main() {
     };
 
     // Create output formatter
-    let formatter = OutputFormatter::new(args.use_colors, args.quiet);
+    let formatter = OutputFormatter::new(args.use_colors, args.quiet, args.verbose);
 
     // Print verbose startup messages
-    formatter.verbose_println(
-        args.verbose,
-        &formatter.info("Verbose mode enabled").to_string(),
-    );
+    formatter.info("Verbose mode enabled");
 
     // Create and execute the appropriate command
     let command: Box<dyn CommandHandler> = match args.command {
@@ -53,10 +50,7 @@ fn main() {
             payload,
             output,
         } => {
-            formatter.verbose_println(
-                args.verbose,
-                &formatter.command("Running command: embed").to_string(),
-            );
+            formatter.info("Running command: embed");
             Box::new(EmbedCommand {
                 src,
                 payload,
@@ -64,16 +58,13 @@ fn main() {
             })
         }
         Command::Extract { src, output } => {
-            formatter.verbose_println(
-                args.verbose,
-                &formatter.command("Running command: extract").to_string(),
-            );
+            formatter.info("Running command: extract");
             Box::new(ExtractCommand { src, output })
         }
     };
 
     // Execute the command
-    if command.execute(&formatter, args.verbose).is_err() {
+    if command.execute(&formatter).is_err() {
         std::process::exit(1);
     }
 }
@@ -81,23 +72,19 @@ fn main() {
 fn handle_cli_error(error: CliError) {
     match error {
         CliError::MissingSubcommand { program_name } => {
-            let formatter = OutputFormatter::new(true, false);
-            formatter.error_println(&formatter.error("Error: Missing subcommand.").to_string());
+            let formatter = OutputFormatter::new(true, false, false);
+            formatter.error("Error: Missing subcommand.");
             let help_cmd = HelpCommand { program_name };
-            let _ = help_cmd.execute(&formatter, false);
+            let _ = help_cmd.execute(&formatter);
         }
         CliError::UnknownCommand {
             program_name,
             command,
         } => {
-            let formatter = OutputFormatter::new(true, false);
-            formatter.error_println(
-                &formatter
-                    .error(&format!("Error: unknown sub‑command '{}'.", command))
-                    .to_string(),
-            );
+            let formatter = OutputFormatter::new(true, false, false);
+            formatter.error(&format!("Error: unknown sub‑command '{}'.", command));
             let help_cmd = HelpCommand { program_name };
-            let _ = help_cmd.execute(&formatter, false);
+            let _ = help_cmd.execute(&formatter);
         }
         CliError::WrongArgumentCount {
             program_name,
@@ -105,17 +92,13 @@ fn handle_cli_error(error: CliError) {
             expected,
             got,
         } => {
-            let formatter = OutputFormatter::new(true, false);
-            formatter.error_println(
-                &formatter
-                    .error(&format!(
-                        "Error: {} expects {} arguments, got {}.",
-                        command, expected, got
-                    ))
-                    .to_string(),
-            );
+            let formatter = OutputFormatter::new(true, false, false);
+            formatter.error(&format!(
+                "Error: {} expects {} arguments, got {}.",
+                command, expected, got
+            ));
             let help_cmd = HelpCommand { program_name };
-            let _ = help_cmd.execute(&formatter, false);
+            let _ = help_cmd.execute(&formatter);
         }
     }
 }

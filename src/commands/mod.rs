@@ -25,5 +25,5 @@ pub mod version;
 /// Trait for all command handlers
 pub trait CommandHandler {
     /// Execute the command
-    fn execute(&self, formatter: &OutputFormatter, verbose: bool) -> Result<(), Box<dyn Error>>;
+    fn execute(&self, formatter: &OutputFormatter) -> Result<(), Box<dyn Error>>;
 }

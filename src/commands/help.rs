@@ -24,7 +24,7 @@ pub struct HelpCommand {
 }
 
 impl CommandHandler for HelpCommand {
-    fn execute(&self, formatter: &OutputFormatter, _verbose: bool) -> Result<(), Box<dyn Error>> {
+    fn execute(&self, formatter: &OutputFormatter) -> Result<(), Box<dyn Error>> {
         let supported = EngineRouter::new()
             .engines
             .iter()
