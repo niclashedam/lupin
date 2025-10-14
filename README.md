@@ -152,10 +152,18 @@ cargo test test_engine_router
 ```
 lupin/
 ├── src/
-│   ├── main.rs              # CLI interface and argument parsing
+│   ├── main.rs              # Entry point and command dispatcher
 │   ├── lib.rs               # Core traits and engine router
+│   ├── cli.rs               # Command-line argument parsing
 │   ├── file.rs              # Simple file I/O operations
 │   ├── operations.rs        # High-level embed/extract functions
+│   ├── output.rs            # Colored output formatting and verbosity control
+│   ├── commands/            # Modular command handlers
+│   │   ├── mod.rs           # Command trait definition
+│   │   ├── embed.rs         # Embed command implementation
+│   │   ├── extract.rs       # Extract command implementation
+│   │   ├── help.rs          # Help command implementation
+│   │   └── version.rs       # Version command implementation
 │   └── engines/
 │       ├── mod.rs           # Engine module declarations
 │       ├── pdf.rs           # PDF steganography engine
