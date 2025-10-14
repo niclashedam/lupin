@@ -1,14 +1,14 @@
 # 🕵️ Lupin
 
-![CI](https://github.com/niclashedam/lupin/workflows/CI/badge.svg)
+![CI](https://github.com/niclashedam/lupin/actions/workflows/ci.yml/badge.svg?branch=master)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
-![Rust](https://img.shields.io/badge/rust-1.48%2B-orange.svg)
+![Rust](https://img.shields.io/badge/rust-1.53%2B-orange.svg)
 
-A blazing-fast, lightweight steganography tool for concealing data inside PDF files. Lupin exploits the fact that PDF viewers ignore content after the `%%EOF` marker, allowing arbitrary payloads to be appended to a document without affecting how it is displayed by standard PDF readers.
+A blazing-fast, lightweight steganography tool with modular engine support for concealing data inside various file formats. Lupin currently supports PDF files and is designed for easy extensibility to other formats.
 
 Written in Rust for performance and safety, Lupin provides a simple command-line interface for embedding and extracting hidden files. It is cross-platform and works on Linux, macOS and Windows.
 
-In an era when privacy is important, Lupin offers a discreet way to conceal sensitive information within ordinary documents. It is named after Arsène Lupin, the fictional gentleman thief — a nod to the project's goal of invisibly hiding data inside ordinary files.
+Named after [Arsène Lupin](https://en.wikipedia.org/wiki/Ars%C3%A8ne_Lupin), the fictional gentleman thief; a nod to the project's goal of invisibly hiding data inside ordinary files.
 
 ## 🚀 Quick Start
 
@@ -35,21 +35,38 @@ lupin extract output.pdf recovered_secret.txt
 
 # Extract to stdout (useful for piping)
 lupin extract output.pdf -
+```
 
-# Extract without using Lupin (using standard tools)
+Lupin does not use proprietary formats or secret techniques, so it is possible to extract the hidden data using standard command-line tools. However, it should be noted that some formats may have specific requirements or nuances that make direct extraction more complex. Due to this, we recommend using Lupin to ensure compatibility.
+
+```bash
+# Extract from a PDF without using Lupin (using standard tools)
 tail -n 1 examples/out.pdf | cut -c 6- | base64 -d
 ```
 
-While extraction can be done with standard tools, we recommend using Lupin to ensure compatibility.
-
 ## 🔧 How it works
 
-Lupin exploits a feature of the PDF format: content after the `%%EOF` marker is ignored by PDF readers but remains part of the file. The tool implements two main operations:
+Lupin uses a **modular engine architecture** that automatically detects file formats and applies the appropriate steganography technique:
 
-1. **Embedding**: finds the last `%%EOF` marker in the PDF and appends base64-encoded payload data directly after it.
-2. **Extraction**: locates the `%%EOF` marker and decodes everything after it back to the original binary data.
+### Engine System
 
-In short, Lupin uses the PDF as a container for hidden data while preserving the original document so it opens normally in any PDF viewer.
+1. **Auto-detection**: Lupin reads magic bytes to identify the file format
+2. **Engine routing**: Routes to the appropriate steganography engine
+3. **Embedding**: Each engine implements format-specific hiding strategies
+4. **Extraction**: Engines know how to recover hidden data from their format
+
+This design makes adding new file formats straightforward while keeping the CLI interface simple.
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   CLI Interface │───▶│  EngineRouter    │───▶│  Format Engine  │
+│                 │    │                  │    │   (PDF, etc.)   │
+│ embed/extract   │    │ Auto-detection   │    │ Format-specific │
+│    commands     │    │ Magic bytes      │    │ embed/extract   │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+The modular design allows developers to easily add new file format support by implementing the `SteganographyEngine` trait.
 
 ## 💡 Usage examples
 
@@ -90,7 +107,7 @@ lupin extract presentation_with_secrets.pdf - | unzip -
 
 ### Prerequisites
 
-- Rust 1.48 or later
+- Rust 1.53 or later
 - Cargo (included with Rust)
 
 ### Build commands
@@ -114,7 +131,7 @@ cargo clippy
 
 ## 🧪 Testing
 
-The project includes comprehensive tests to ensure reliability:
+The project includes focused tests for reliability and maintainability:
 
 ```bash
 # Run all tests
@@ -123,11 +140,12 @@ cargo test
 # Run tests with verbose output
 cargo test --verbose
 
-# Run a single test
-cargo test test_encode_and_extract_payload
-```
+# Run PDF engine tests specifically
+cargo test engines::pdf
 
-The CI pipeline also performs integration tests by embedding and extracting data from the included `examples/cat.pdf` file.
+# Test the core router functionality
+cargo test test_engine_router
+```
 
 ## 📁 Project structure
 
@@ -135,7 +153,13 @@ The CI pipeline also performs integration tests by embedding and extracting data
 lupin/
 ├── src/
 │   ├── main.rs              # CLI interface and argument parsing
-│   └── lib.rs               # Core library with modular components
+│   ├── lib.rs               # Core traits and engine router
+│   ├── file.rs              # Simple file I/O operations
+│   ├── operations.rs        # High-level embed/extract functions
+│   └── engines/
+│       ├── mod.rs           # Engine module declarations
+│       ├── pdf.rs           # PDF steganography engine
+│       └── README.md        # Guide for adding new engines
 ├── examples/
 │   ├── cat.pdf              # Sample PDF for testing
 │   ├── out.pdf              # Sample output PDF after embedding message.txt
@@ -143,27 +167,70 @@ lupin/
 └── .github/workflows/       # CI/CD pipelines
 ```
 
+### Adding New File Format Support
+
+The modular architecture makes it easy to add support for new file formats:
+
+1. **Create an engine** in `src/engines/yourformat.rs`
+2. **Implement the trait**:
+   ```rust
+   impl SteganographyEngine for YourFormatEngine {
+       fn magic_bytes(&self) -> &[u8] { b"MAGIC" }
+       fn format_name(&self) -> &str { "YourFormat" }
+       fn embed(&self, source: &[u8], payload: &[u8]) -> io::Result<Vec<u8>> { ... }
+       fn extract(&self, source: &[u8]) -> io::Result<Vec<u8>> { ... }
+   }
+   ```
+3. **Register the engine** in `EngineRouter::new()` in `lib.rs`
+
+The CLI and detection logic automatically work with new engines!
+
 ## 📚 Library usage
 
-You can also use Lupin as a Rust library:
+You can use Lupin as a Rust library with the clean, simple API:
 
 ```rust
 use lupin::operations::{embed, extract};
 use std::path::Path;
 
 fn main() -> std::io::Result<()> {
-    // Embed a payload
+    // Embed a payload (auto-detects file format)
     embed(
-        Path::new("source.pdf"),
-        Path::new("payload.bin"),
-        Path::new("output.pdf"),
+        Path::new("source.pdf"),    // Source file
+        Path::new("payload.bin"),   // Data to hide
+        Path::new("output.pdf"),    // Output file
     )?;
 
-    // Extract the payload
+    // Extract the payload (auto-detects file format)
     extract(
-        Path::new("output.pdf"),
-        Path::new("recovered.bin"),
+        Path::new("output.pdf"),     // File with hidden data
+        Path::new("recovered.bin"),  // Extracted output
     )?;
+
+    Ok(())
+}
+```
+
+The library automatically detects file formats and uses the appropriate engine, so your code works with any supported format without changes.
+
+### Advanced Usage
+
+For more control, you can use the engine system directly:
+
+```rust
+use lupin::{EngineRouter, SteganographyEngine};
+
+fn main() -> std::io::Result<()> {
+    let router = EngineRouter::new();
+    let data = std::fs::read("document.pdf")?;
+
+    // Auto-detect and get the appropriate engine
+    let engine = router.detect_engine(&data)?;
+    println!("Detected format: {}", engine.format_name());
+
+    // Use the engine directly
+    let payload = b"secret data";
+    let result = engine.embed(&data, payload)?;
 
     Ok(())
 }

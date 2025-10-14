@@ -2,7 +2,7 @@
 name = "lupin"
 version = "0.0.0"
 edition = "2018"
-rust-version = "1.48"
+rust-version = "1.53"
 description = "A blazing-fast steganography tool for concealing data inside PDF files"
 license = "Apache-2.0"
 repository = "https://github.com/niclashedam/lupin"
