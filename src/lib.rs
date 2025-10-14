@@ -15,9 +15,12 @@
 use std::io;
 
 // Module declarations
+pub mod cli;
+pub mod commands;
 pub mod engines;
 pub mod file;
 pub mod operations;
+pub mod output;
 
 /// Trait for steganography engines that can embed and extract data from specific file formats
 pub trait SteganographyEngine {
@@ -26,6 +29,9 @@ pub trait SteganographyEngine {
 
     /// Returns a human-readable name for this file format
     fn format_name(&self) -> &str;
+
+    /// Returns a human-readable extension for this file format
+    fn format_ext(&self) -> &str;
 
     /// Embeds payload data into the source file data
     fn embed(&self, source_data: &[u8], payload: &[u8]) -> io::Result<Vec<u8>>;
@@ -36,7 +42,7 @@ pub trait SteganographyEngine {
 
 /// File format detector that routes to appropriate engines
 pub struct EngineRouter {
-    engines: Vec<Box<dyn SteganographyEngine>>,
+    pub engines: Vec<Box<dyn SteganographyEngine>>,
 }
 
 impl EngineRouter {
@@ -56,16 +62,9 @@ impl EngineRouter {
             }
         }
 
-        let supported = self
-            .engines
-            .iter()
-            .map(|e| e.format_name())
-            .collect::<Vec<_>>()
-            .join(", ");
-
         Err(io::Error::new(
             io::ErrorKind::Unsupported,
-            format!("Unsupported file format. Supported: {}", supported),
+            "Unsupported file format.",
         ))
     }
 }

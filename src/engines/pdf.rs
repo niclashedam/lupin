@@ -51,6 +51,10 @@ impl SteganographyEngine for PdfEngine {
         "PDF"
     }
 
+    fn format_ext(&self) -> &str {
+        ".pdf"
+    }
+
     fn embed(&self, source_data: &[u8], payload: &[u8]) -> io::Result<Vec<u8>> {
         let eof_end = self.find_eof_end(source_data).ok_or_else(|| {
             io::Error::new(

@@ -15,51 +15,171 @@
 //! High-level operations for embedding and extracting steganographic data
 
 use crate::file::{read_file, write_file};
+use crate::output::OutputFormatter;
 use crate::EngineRouter;
 use std::io::{self, Write};
 use std::path::Path;
 
 /// Embeds payload data inside a file using the appropriate engine
-pub fn embed(src_file: &Path, payload: &Path, out_file: &Path) -> io::Result<()> {
+pub fn embed(
+    src_file: &Path,
+    payload: &Path,
+    out_file: &Path,
+    formatter: &OutputFormatter,
+) -> io::Result<()> {
     let router = EngineRouter::new();
-    let source_bytes = read_file(src_file)?;
-    let payload_bytes = read_file(payload)?;
+    let source_bytes = match read_file(src_file) {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            formatter.error_println(
+                &formatter
+                    .error(&format!(
+                        "Failed to read source file '{}': {}",
+                        src_file.display(),
+                        e
+                    ))
+                    .to_string(),
+            );
+            return Err(e);
+        }
+    };
 
-    let engine = router.detect_engine(&source_bytes)?;
-    let output_data = engine.embed(&source_bytes, &payload_bytes)?;
+    let payload_bytes = match read_file(payload) {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            formatter.error_println(
+                &formatter
+                    .error(&format!(
+                        "Failed to read payload file '{}': {}",
+                        payload.display(),
+                        e
+                    ))
+                    .to_string(),
+            );
+            return Err(e);
+        }
+    };
 
-    write_file(out_file, &output_data)?;
+    let engine = match router.detect_engine(&source_bytes) {
+        Ok(engine) => engine,
+        Err(e) => {
+            formatter.error_println(
+                &formatter
+                    .error(&format!("Engine detection failed: {}", e))
+                    .to_string(),
+            );
+            return Err(e);
+        }
+    };
 
-    println!(
+    let output_data = match engine.embed(&source_bytes, &payload_bytes) {
+        Ok(data) => data,
+        Err(e) => {
+            formatter.error_println(
+                &formatter
+                    .error(&format!("Embedding failed: {}", e))
+                    .to_string(),
+            );
+            return Err(e);
+        }
+    };
+
+    if let Err(e) = write_file(out_file, &output_data) {
+        formatter.error_println(
+            &formatter
+                .error(&format!(
+                    "Failed to write output file '{}': {}",
+                    out_file.display(),
+                    e
+                ))
+                .to_string(),
+        );
+        return Err(e);
+    }
+
+    formatter.println(&format!(
         "✅ Embedded {} bytes into {} ({}), saved as {}",
         payload_bytes.len(),
         src_file.display(),
         engine.format_name(),
         out_file.display()
-    );
+    ));
     Ok(())
 }
 
 /// Extracts hidden data from a file using the appropriate engine
-pub fn extract(src_file: &Path, out_file: &Path) -> io::Result<()> {
+pub fn extract(src_file: &Path, out_file: &Path, formatter: &OutputFormatter) -> io::Result<()> {
     let router = EngineRouter::new();
-    let data = read_file(src_file)?;
+    let data = match read_file(src_file) {
+        Ok(data) => data,
+        Err(e) => {
+            formatter.error_println(
+                &formatter
+                    .error(&format!(
+                        "Failed to read source file '{}': {}",
+                        src_file.display(),
+                        e
+                    ))
+                    .to_string(),
+            );
+            return Err(e);
+        }
+    };
 
-    let engine = router.detect_engine(&data)?;
-    let payload = engine.extract(&data)?;
+    let engine = match router.detect_engine(&data) {
+        Ok(engine) => engine,
+        Err(e) => {
+            formatter.error_println(
+                &formatter
+                    .error(&format!("Engine detection failed: {}", e))
+                    .to_string(),
+            );
+            return Err(e);
+        }
+    };
+
+    let payload = match engine.extract(&data) {
+        Ok(payload) => payload,
+        Err(e) => {
+            formatter.error_println(
+                &formatter
+                    .error(&format!("Extraction failed: {}", e))
+                    .to_string(),
+            );
+            return Err(e);
+        }
+    };
 
     // Special case: "-" means write to stdout
     if out_file.as_os_str() == "-" {
-        io::stdout().write_all(&payload)?;
+        if let Err(e) = io::stdout().write_all(&payload) {
+            formatter.error_println(
+                &formatter
+                    .error(&format!("Failed to write to stdout: {}", e))
+                    .to_string(),
+            );
+            return Err(e);
+        }
     } else {
-        write_file(out_file, &payload)?;
-        println!(
+        if let Err(e) = write_file(out_file, &payload) {
+            formatter.error_println(
+                &formatter
+                    .error(&format!(
+                        "Failed to write output file '{}': {}",
+                        out_file.display(),
+                        e
+                    ))
+                    .to_string(),
+            );
+            return Err(e);
+        }
+        formatter.println(&format!(
             "✅ Extracted {} bytes from {} ({}), saved as {}",
             payload.len(),
             src_file.display(),
             engine.format_name(),
             out_file.display()
-        );
+        ));
     }
     Ok(())
 }
