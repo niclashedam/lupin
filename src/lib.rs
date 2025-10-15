@@ -16,6 +16,7 @@ use std::io;
 
 // Module declarations
 pub mod engines;
+pub mod error;
 pub mod file;
 pub mod operations;
 
@@ -27,6 +28,9 @@ pub trait SteganographyEngine {
     /// Returns a human-readable name for this file format
     fn format_name(&self) -> &str;
 
+    /// Returns a human-readable extension for this file format
+    fn format_ext(&self) -> &str;
+
     /// Embeds payload data into the source file data
     fn embed(&self, source_data: &[u8], payload: &[u8]) -> io::Result<Vec<u8>>;
 
@@ -35,8 +39,9 @@ pub trait SteganographyEngine {
 }
 
 /// File format detector that routes to appropriate engines
+#[derive(Default)]
 pub struct EngineRouter {
-    engines: Vec<Box<dyn SteganographyEngine>>,
+    pub engines: Vec<Box<dyn SteganographyEngine>>,
 }
 
 impl EngineRouter {
@@ -51,28 +56,15 @@ impl EngineRouter {
     pub fn detect_engine(&self, data: &[u8]) -> io::Result<&dyn SteganographyEngine> {
         for engine in &self.engines {
             let magic = engine.magic_bytes();
-            if data.len() >= magic.len() && &data[..magic.len()] == magic {
+            if data.len() >= magic.len() && data.starts_with(magic) {
                 return Ok(engine.as_ref());
             }
         }
 
-        let supported = self
-            .engines
-            .iter()
-            .map(|e| e.format_name())
-            .collect::<Vec<_>>()
-            .join(", ");
-
         Err(io::Error::new(
             io::ErrorKind::Unsupported,
-            format!("Unsupported file format. Supported: {}", supported),
+            "Unsupported file format - no matching engine found",
         ))
-    }
-}
-
-impl Default for EngineRouter {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

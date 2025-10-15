@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::SteganographyEngine;
+use crate::{error::LupinError, SteganographyEngine};
 use base64::{engine::general_purpose, Engine as _};
 use std::io;
 
@@ -51,12 +51,13 @@ impl SteganographyEngine for PdfEngine {
         "PDF"
     }
 
+    fn format_ext(&self) -> &str {
+        ".pdf"
+    }
+
     fn embed(&self, source_data: &[u8], payload: &[u8]) -> io::Result<Vec<u8>> {
         let eof_end = self.find_eof_end(source_data).ok_or_else(|| {
-            io::Error::new(
-                io::ErrorKind::InvalidData,
-                "Invalid PDF: no %%EOF marker found",
-            )
+            io::Error::new(io::ErrorKind::InvalidData, LupinError::PdfNoEofMarker)
         })?;
 
         let encoded_payload = general_purpose::STANDARD.encode(payload);
@@ -71,12 +72,7 @@ impl SteganographyEngine for PdfEngine {
         let eof_pos = source_data
             .windows(eof_marker.len())
             .rposition(|w| w == eof_marker)
-            .ok_or_else(|| {
-                io::Error::new(
-                    io::ErrorKind::NotFound,
-                    "Invalid PDF: no %%EOF marker found",
-                )
-            })?;
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, LupinError::PdfNoEofMarker))?;
 
         let payload_start = eof_pos + eof_marker.len();
         let payload = &source_data[payload_start..];
@@ -91,13 +87,13 @@ impl SteganographyEngine for PdfEngine {
         if payload.is_empty() {
             return Err(io::Error::new(
                 io::ErrorKind::NotFound,
-                "No hidden data found in PDF",
+                LupinError::PdfNoHiddenData,
             ));
         }
 
         general_purpose::STANDARD
             .decode(&payload)
-            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Corrupted hidden data"))
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, LupinError::PdfCorruptedData))
     }
 }
 

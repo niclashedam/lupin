@@ -1,9 +1,9 @@
 [package]
 name = "lupin"
 version = "0.0.0"
-edition = "2018"
-rust-version = "1.53"
-description = "A blazing-fast steganography tool for concealing data inside PDF files"
+edition = "2021"
+rust-version = "1.70"
+description = "A blazing-fast, lightweight steganography tool for concealing secret data within normal files."
 license = "Apache-2.0"
 repository = "https://github.com/niclashedam/lupin"
 homepage = "https://github.com/niclashedam/lupin"
@@ -24,3 +24,5 @@ path = "src/lib.rs"
 
 [dependencies]
 base64 = "0.22"
+clap = { version = "4.5", features = ["derive"] }
+thiserror = "2"

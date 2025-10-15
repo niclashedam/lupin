@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/niclashedam/lupin/actions/workflows/ci.yml/badge.svg?branch=master)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
-![Rust](https://img.shields.io/badge/rust-1.53%2B-orange.svg)
+![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)
 
 A blazing-fast, lightweight steganography tool with modular engine support for concealing data inside various file formats. Lupin currently supports PDF files and is designed for easy extensibility to other formats.
 
@@ -107,7 +107,7 @@ lupin extract presentation_with_secrets.pdf - | unzip -
 
 ### Prerequisites
 
-- Rust 1.53 or later
+- Rust 1.70 or later
 - Cargo (included with Rust)
 
 ### Build commands
@@ -152,9 +152,10 @@ cargo test test_engine_router
 ```
 lupin/
 ├── src/
-│   ├── main.rs              # CLI interface and argument parsing
-│   ├── lib.rs               # Core traits and engine router
+│   ├── error.rs             # Error types
 │   ├── file.rs              # Simple file I/O operations
+│   ├── lib.rs               # Core traits and engine router
+│   ├── main.rs              # CLI interface and argument parsing
 │   ├── operations.rs        # High-level embed/extract functions
 │   └── engines/
 │       ├── mod.rs           # Engine module declarations
