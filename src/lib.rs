@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::io;
-
 // Module declarations
 pub mod engines;
 pub mod error;
-pub mod file;
 pub mod operations;
 
-/// Trait for steganography engines that can embed and extract data from specific file formats
+use crate::engines::PdfEngine;
+use crate::error::Result;
+use std::io;
+
+/// Trait for steganography engines that can embed and extract hidden data
 pub trait SteganographyEngine {
     /// Returns the magic bytes that identify this file format
     fn magic_bytes(&self) -> &[u8];
@@ -32,10 +33,10 @@ pub trait SteganographyEngine {
     fn format_ext(&self) -> &str;
 
     /// Embeds payload data into the source file data
-    fn embed(&self, source_data: &[u8], payload: &[u8]) -> io::Result<Vec<u8>>;
+    fn embed(&self, source_data: &[u8], payload: &[u8]) -> Result<Vec<u8>>;
 
     /// Extracts hidden payload from the file data
-    fn extract(&self, source_data: &[u8]) -> io::Result<Vec<u8>>;
+    fn extract(&self, source_data: &[u8]) -> Result<Vec<u8>>;
 }
 
 /// File format detector that routes to appropriate engines
@@ -48,23 +49,24 @@ impl EngineRouter {
     /// Creates a new router with all available engines
     pub fn new() -> Self {
         Self {
-            engines: vec![Box::new(engines::PdfEngine::new())],
+            engines: vec![Box::new(PdfEngine::new())],
         }
     }
 
-    /// Detects the file format and returns the appropriate engine
-    pub fn detect_engine(&self, data: &[u8]) -> io::Result<&dyn SteganographyEngine> {
+    /// Detects the appropriate engine for the given data
+    pub fn detect_engine(&self, data: &[u8]) -> Result<&dyn SteganographyEngine> {
         for engine in &self.engines {
-            let magic = engine.magic_bytes();
-            if data.len() >= magic.len() && data.starts_with(magic) {
+            if data.starts_with(engine.magic_bytes()) {
                 return Ok(engine.as_ref());
             }
         }
 
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "Unsupported file format - no matching engine found",
-        ))
+        Err(crate::error::LupinError::Io {
+            source: io::Error::new(
+                io::ErrorKind::Unsupported,
+                "Unsupported file format - no matching engine found",
+            ),
+        })
     }
 }
 

@@ -12,21 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use clap::{Parser, Subcommand};
-use lupin::error::Result;
-use lupin::operations::{self, EmbedResult, ExtractResult};
+use clap::{Parser, Subcommand, ValueEnum};
+use log::{debug, info, warn};
+use lupin::error::{LupinError, Result};
+use lupin::operations;
+use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
+use std::fs;
+use std::io::{self, Write};
 use std::path::PathBuf;
+
+/// Log level for controlling output verbosity
+#[derive(Debug, Clone, ValueEnum)]
+enum LogLevel {
+    /// Only show errors
+    Error,
+    /// Show warnings and errors
+    Warn,
+    /// Show informational messages, warnings, and errors (default)
+    Info,
+    /// Show debug information and all other messages
+    Debug,
+}
 
 /// A blazing-fast steganography tool for concealing data inside PDF files
 #[derive(Parser, Debug)]
 #[command(name = "lupin")]
 #[command(version, about, long_about = None)]
 struct CliArgs {
-    /// Enable verbose output
+    /// Set log level explicitly
+    #[arg(long, value_enum)]
+    log_level: Option<LogLevel>,
+
+    /// Enable verbose output (shorthand for --log-level debug)
     #[arg(short, long)]
     verbose: bool,
 
-    /// Suppress output (quiet mode)
+    /// Suppress normal output (shorthand for --log-level error)
     #[arg(short, long)]
     quiet: bool,
 
@@ -55,21 +76,36 @@ enum Command {
     },
 }
 
-/// Print verbose messages (only in verbose mode, unless quiet)
-fn print_verbose(message: &str, verbose: bool, quiet: bool) {
-    if verbose && !quiet {
-        println!("{}", message);
+/// Initialize logging based on CLI flags
+fn init_logging(log_level: Option<LogLevel>, verbose: bool, quiet: bool) {
+    let level = if let Some(ref level) = log_level {
+        match level {
+            LogLevel::Error => log::LevelFilter::Error,
+            LogLevel::Warn => log::LevelFilter::Warn,
+            LogLevel::Info => log::LevelFilter::Info,
+            LogLevel::Debug => log::LevelFilter::Debug,
+        }
+    } else if quiet {
+        log::LevelFilter::Error
+    } else if verbose {
+        log::LevelFilter::Debug
+    } else {
+        log::LevelFilter::Info
+    };
+
+    TermLogger::init(
+        level,
+        Config::default(),
+        TerminalMode::Mixed,
+        ColorChoice::Auto,
+    )
+    .expect("Failed to initialize logger");
+
+    // Warn if both explicit log-level and shorthand flags are used
+    if log_level.is_some() && (verbose || quiet) {
+        warn!("Explicit --log-level overrides --verbose and --quiet flags");
     }
 }
-
-/// Print success messages (unless quiet mode)
-fn print_success(message: &str, quiet: bool) {
-    if !quiet {
-        println!("{}", message);
-    }
-}
-
-/// Format file size in human-readable format
 fn format_size(size: usize) -> String {
     if size < 1024 {
         format!("{} B", size)
@@ -82,111 +118,107 @@ fn format_size(size: usize) -> String {
     }
 }
 
-/// Handle embed result output
-fn handle_embed_result(result: &EmbedResult, verbose: bool, quiet: bool) {
-    print_verbose(&format!("Using {} engine", result.engine), verbose, quiet);
-
-    print_verbose(
-        &format!(
-            "Embedded {} ({}) into {} ({}) -> {} ({}), {}% increase",
-            result.payload.path.display(),
-            format_size(result.payload.size),
-            result.src.path.display(),
-            format_size(result.src.size),
-            result.output.path.display(),
-            format_size(result.output.size),
-            ((result.output.size as f64 / result.src.size as f64 - 1.0) * 100.0).round()
-        ),
-        verbose,
-        quiet,
+/// Handle embed command
+fn handle_embed(src: PathBuf, payload: PathBuf, output: PathBuf) -> Result<()> {
+    debug!("Running command: embed");
+    debug!(
+        "Source: {}, Payload: {}, Output: {}",
+        src.display(),
+        payload.display(),
+        output.display()
     );
 
-    print_success("Successfully embedded payload into PDF.", quiet);
+    // Read files
+    let source_data = fs::read(&src).map_err(|e| LupinError::SourceFileRead {
+        path: src,
+        source: e,
+    })?;
+    let payload_data = fs::read(&payload).map_err(|e| LupinError::PayloadFileRead {
+        path: payload,
+        source: e,
+    })?;
+
+    // Process
+    let (embedded_data, result) = operations::embed(&source_data, &payload_data)?;
+
+    // Write output
+    fs::write(&output, &embedded_data).map_err(|e| LupinError::OutputFileWrite {
+        path: output.clone(),
+        source: e,
+    })?;
+
+    // Display results
+    debug!("Using {} engine", result.engine);
+    info!(
+        "Embedded {} payload into {} source → {} output (+{:.0}%)",
+        format_size(result.payload_size),
+        format_size(result.source_size),
+        format_size(result.output_size),
+        ((result.output_size as f64 / result.source_size as f64 - 1.0) * 100.0).round()
+    );
+
+    Ok(())
 }
 
-/// Handle extract result output
-fn handle_extract_result(result: &ExtractResult, verbose: bool, quiet: bool) {
-    print_verbose("Detecting appropriate engine...", verbose, quiet);
-    print_verbose(&format!("Using {} engine", result.engine), verbose, quiet);
+/// Handle extract command
+fn handle_extract(src: PathBuf, output: PathBuf) -> Result<()> {
+    debug!("Running command: extract");
+    debug!("Source: {}, Output: {}", src.display(), output.display());
 
-    if result.written_to_stdout {
-        print_verbose(
-            &format!("Extracted {} to stdout", format_size(result.output.size)),
-            verbose,
-            quiet,
-        );
+    // Read file
+    let source_data = fs::read(&src).map_err(|e| LupinError::SourceFileRead {
+        path: src,
+        source: e,
+    })?;
+
+    // Process
+    let (payload_data, result) = operations::extract(&source_data)?;
+
+    // Write output
+    let written_to_stdout = output.as_os_str() == "-";
+    if written_to_stdout {
+        io::stdout()
+            .write_all(&payload_data)
+            .map_err(|e| LupinError::StdoutWrite { source: e })?;
     } else {
-        print_verbose(
-            &format!(
-                "Extracted {} from {} to {}",
-                format_size(result.output.size),
-                result.src.path.display(),
-                result.output.path.display(),
-            ),
-            verbose,
-            quiet,
-        );
+        fs::write(&output, &payload_data).map_err(|e| LupinError::OutputFileWrite {
+            path: output,
+            source: e,
+        })?;
     }
 
-    print_success("Successfully extracted payload from PDF.", quiet);
+    // Display results
+    debug!("Using {} engine", result.engine);
+    if written_to_stdout {
+        debug!("Extracted {} to stdout", format_size(result.payload_size));
+    } else {
+        debug!("Extracted {} from source", format_size(result.payload_size));
+    }
+
+    info!("Successfully extracted payload from PDF.");
+    Ok(())
 }
 
 fn main() -> Result<()> {
-    // Parse command line arguments
     let args = CliArgs::parse();
+
+    // Initialize logging based on verbosity flags
+    init_logging(args.log_level, args.verbose, args.quiet);
 
     // If no command is provided, clap will handle help/error automatically
     let command = match args.command {
         Some(cmd) => cmd,
-        None => {
-            // This shouldn't happen with clap, but just in case
-            return Ok(());
-        }
+        None => return Ok(()),
     };
 
-    // Print verbose startup messages
-    print_verbose("Verbose mode enabled", args.verbose, args.quiet);
+    debug!("Verbose mode enabled");
 
-    // Execute the appropriate command directly
     match command {
         Command::Embed {
             src,
             payload,
             output,
-        } => {
-            print_verbose("Running command: embed", args.verbose, args.quiet);
-
-            // Print file paths in verbose mode
-            print_verbose(
-                &format!(
-                    "Input files: {}, {}, {}",
-                    src.display(),
-                    payload.display(),
-                    output.display()
-                ),
-                args.verbose,
-                args.quiet,
-            );
-
-            // Execute the embed operation and handle result
-            let result = operations::embed(&src, &payload, &output)?;
-            handle_embed_result(&result, args.verbose, args.quiet);
-        }
-        Command::Extract { src, output } => {
-            print_verbose("Running command: extract", args.verbose, args.quiet);
-
-            // Print file paths in verbose mode
-            print_verbose(
-                &format!("Input files: {}, {}", src.display(), output.display()),
-                args.verbose,
-                args.quiet,
-            );
-
-            // Execute the extract operation and handle result
-            let result = operations::extract(&src, &output)?;
-            handle_extract_result(&result, args.verbose, args.quiet);
-        }
+        } => handle_embed(src, payload, output),
+        Command::Extract { src, output } => handle_extract(src, output),
     }
-
-    Ok(())
 }

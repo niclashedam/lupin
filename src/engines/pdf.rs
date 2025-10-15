@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{error::LupinError, SteganographyEngine};
+use crate::{
+    error::{LupinError, Result},
+    SteganographyEngine,
+};
 use base64::{engine::general_purpose, Engine as _};
-use std::io;
+use log::warn;
 
 /// PDF steganography engine
 ///
@@ -55,10 +58,10 @@ impl SteganographyEngine for PdfEngine {
         ".pdf"
     }
 
-    fn embed(&self, source_data: &[u8], payload: &[u8]) -> io::Result<Vec<u8>> {
-        let eof_end = self.find_eof_end(source_data).ok_or_else(|| {
-            io::Error::new(io::ErrorKind::InvalidData, LupinError::PdfNoEofMarker)
-        })?;
+    fn embed(&self, source_data: &[u8], payload: &[u8]) -> Result<Vec<u8>> {
+        let eof_end = self
+            .find_eof_end(source_data)
+            .ok_or(LupinError::PdfNoEofMarker)?;
 
         let encoded_payload = general_purpose::STANDARD.encode(payload);
         let mut result = Vec::with_capacity(eof_end + encoded_payload.len());
@@ -67,12 +70,12 @@ impl SteganographyEngine for PdfEngine {
         Ok(result)
     }
 
-    fn extract(&self, source_data: &[u8]) -> io::Result<Vec<u8>> {
+    fn extract(&self, source_data: &[u8]) -> Result<Vec<u8>> {
         let eof_marker = b"%%EOF";
         let eof_pos = source_data
             .windows(eof_marker.len())
             .rposition(|w| w == eof_marker)
-            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, LupinError::PdfNoEofMarker))?;
+            .ok_or(LupinError::PdfNoEofMarker)?;
 
         let payload_start = eof_pos + eof_marker.len();
         let payload = &source_data[payload_start..];
@@ -85,15 +88,13 @@ impl SteganographyEngine for PdfEngine {
             .collect();
 
         if payload.is_empty() {
-            return Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                LupinError::PdfNoHiddenData,
-            ));
+            warn!("No hidden data found");
+            return Err(LupinError::PdfNoHiddenData);
         }
 
         general_purpose::STANDARD
             .decode(&payload)
-            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, LupinError::PdfCorruptedData))
+            .map_err(|_| LupinError::PdfCorruptedData)
     }
 }
 
