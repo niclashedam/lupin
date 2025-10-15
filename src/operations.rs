@@ -14,133 +14,123 @@
 
 //! High-level operations for embedding and extracting steganographic data
 
+use crate::error::{LupinError, Result};
 use crate::file::{read_file, write_file};
-use crate::output::OutputFormatter;
 use crate::EngineRouter;
 use std::io::{self, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+/// File with path and size
+#[derive(Debug, Clone)]
+pub struct File {
+    pub path: PathBuf,
+    pub size: usize,
+}
+
+/// Result of an embed operation
+#[derive(Debug, Clone)]
+pub struct EmbedResult {
+    pub src: File,
+    pub payload: File,
+    pub output: File,
+    pub engine: String,
+}
+
+/// Result of an extract operation
+#[derive(Debug, Clone)]
+pub struct ExtractResult {
+    pub src: File,
+    pub output: File,
+    pub engine: String,
+    pub written_to_stdout: bool,
+}
 
 /// Embeds payload data inside a file using the appropriate engine
-pub fn embed(
-    src_file: &Path,
-    payload: &Path,
-    out_file: &Path,
-    formatter: &OutputFormatter,
-) -> io::Result<()> {
+pub fn embed(src_file: &Path, payload: &Path, out_file: &Path) -> Result<EmbedResult> {
     let router = EngineRouter::new();
-    let source_bytes = match read_file(src_file) {
-        Ok(bytes) => bytes,
-        Err(e) => {
-            formatter.error(&format!(
-                "Failed to read source file '{}': {}",
-                src_file.display(),
-                e
-            ));
-            return Err(e);
-        }
-    };
 
-    let payload_bytes = match read_file(payload) {
-        Ok(bytes) => bytes,
-        Err(e) => {
-            formatter.error(&format!(
-                "Failed to read payload file '{}': {}",
-                payload.display(),
-                e
-            ));
-            return Err(e);
-        }
-    };
+    let source_bytes = read_file(src_file).map_err(|e| LupinError::SourceFileRead {
+        path: src_file.to_path_buf(),
+        source: e,
+    })?;
 
-    let engine = match router.detect_engine(&source_bytes) {
-        Ok(engine) => engine,
-        Err(e) => {
-            formatter.error(&format!("Engine detection failed: {}", e));
-            return Err(e);
-        }
-    };
+    let payload_bytes = read_file(payload).map_err(|e| LupinError::PayloadFileRead {
+        path: payload.to_path_buf(),
+        source: e,
+    })?;
 
-    let output_data = match engine.embed(&source_bytes, &payload_bytes) {
-        Ok(data) => data,
-        Err(e) => {
-            formatter.error(&format!("Embedding failed: {}", e));
-            return Err(e);
-        }
-    };
+    let engine = router
+        .detect_engine(&source_bytes)
+        .map_err(|e| LupinError::EngineDetection { source: e })?;
 
-    if let Err(e) = write_file(out_file, &output_data) {
-        formatter.error(&format!(
-            "Failed to write output file '{}': {}",
-            out_file.display(),
-            e
-        ));
-        return Err(e);
-    }
+    let embedded_bytes = engine
+        .embed(&source_bytes, &payload_bytes)
+        .map_err(|e| LupinError::EmbedFailed { source: e })?;
 
-    formatter.info(&format!(
-        "Embedded {} bytes into {} ({}). Increased by {}% from {} to {} bytes.",
-        formatter.size(payload_bytes.len()),
-        formatter.path(&src_file.display().to_string()),
-        engine.format_name(),
-        (output_data.len() as f64 / source_bytes.len() as f64 * 100.0 - 100.0).round(),
-        formatter.size(source_bytes.len()),
-        formatter.size(output_data.len())
-    ));
-    Ok(())
+    write_file(out_file, &embedded_bytes).map_err(|e| LupinError::OutputFileWrite {
+        path: out_file.to_path_buf(),
+        source: e,
+    })?;
+
+    Ok(EmbedResult {
+        src: File {
+            path: src_file.to_path_buf(),
+            size: source_bytes.len(),
+        },
+        payload: File {
+            path: payload.to_path_buf(),
+            size: payload_bytes.len(),
+        },
+        output: File {
+            path: out_file.to_path_buf(),
+            size: embedded_bytes.len(),
+        },
+        engine: engine.format_name().to_string(),
+    })
 }
 
 /// Extracts hidden data from a file using the appropriate engine
-pub fn extract(src_file: &Path, out_file: &Path, formatter: &OutputFormatter) -> io::Result<()> {
+pub fn extract(src_file: &Path, out_file: &Path) -> Result<ExtractResult> {
     let router = EngineRouter::new();
-    let data = match read_file(src_file) {
-        Ok(data) => data,
-        Err(e) => {
-            formatter.error(&format!(
-                "Failed to read source file '{}': {}",
-                src_file.display(),
-                e
-            ));
-            return Err(e);
-        }
-    };
 
-    let engine = match router.detect_engine(&data) {
-        Ok(engine) => engine,
-        Err(e) => {
-            formatter.error(&format!("Engine detection failed: {}", e));
-            return Err(e);
-        }
-    };
+    let data = read_file(src_file).map_err(|e| LupinError::SourceFileRead {
+        path: src_file.to_path_buf(),
+        source: e,
+    })?;
 
-    let payload = match engine.extract(&data) {
-        Ok(payload) => payload,
-        Err(e) => {
-            formatter.error(&format!("Extraction failed: {}", e));
-            return Err(e);
-        }
-    };
+    let engine = router
+        .detect_engine(&data)
+        .map_err(|e| LupinError::EngineDetection { source: e })?;
+
+    let payload = engine
+        .extract(&data)
+        .map_err(|e| LupinError::ExtractFailed { source: e })?;
+
+    let payload_size = payload.len();
+    let written_to_stdout = out_file.as_os_str() == "-";
 
     // Special case: "-" means write to stdout
-    if out_file.as_os_str() == "-" {
-        if let Err(e) = io::stdout().write_all(&payload) {
-            formatter.error(&format!("Failed to write to stdout: {}", e));
-            return Err(e);
-        }
+    if written_to_stdout {
+        io::stdout()
+            .write_all(&payload)
+            .map_err(|e| LupinError::StdoutWrite { source: e })?;
     } else {
-        if let Err(e) = write_file(out_file, &payload) {
-            formatter.error(&format!(
-                "Failed to write output file '{}': {}",
-                out_file.display(),
-                e
-            ));
-            return Err(e);
-        }
-        formatter.info(&format!(
-            "Extracted {} bytes from {} ({}).",
-            formatter.size(payload.len()),
-            formatter.path(&src_file.display().to_string()),
-            engine.format_name(),
-        ));
+        write_file(out_file, &payload).map_err(|e| LupinError::OutputFileWrite {
+            path: out_file.to_path_buf(),
+            source: e,
+        })?;
     }
-    Ok(())
+
+    Ok(ExtractResult {
+        src: File {
+            path: src_file.to_path_buf(),
+            size: data.len(),
+        },
+        output: File {
+            path: out_file.to_path_buf(),
+            size: payload_size,
+        },
+        engine: engine.format_name().to_string(),
+        written_to_stdout,
+    })
 }
