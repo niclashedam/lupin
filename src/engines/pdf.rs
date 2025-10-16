@@ -268,7 +268,7 @@ mod tests {
         let result = engine.embed(&pdf, "more secret".as_bytes());
 
         // Assert
-        assert!(result.is_err()); // Should fail when base64 data is corrupted
+        assert!(result.is_err()); // Should fail due to embed collision (already embedded PDF)
 
         match result.unwrap_err() {
             LupinError::EmbedCollision { .. } => (), // Should return specific error for embed collision
