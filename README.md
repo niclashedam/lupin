@@ -9,9 +9,7 @@ A blazing-fast, lightweight steganography tool for concealing data inside normal
 
 In an era of increasing digital surveillance and diminishing privacy, steganography offers an extra layer of protection by hiding the very existence of sensitive communications. Unlike encryption, which makes data unreadable but obvious, steganography makes data invisible.
 
-Lupin makes this powerful technique accessible through clean, modern tooling.
-
-Lupin is named after [Arsène Lupin](https://en.wikipedia.org/wiki/Ars%C3%A8ne_Lupin), the fictional gentleman thief due to the art of hiding data in plain sight.
+Lupin makes this powerful technique accessible through clean, modern tooling. It is named after [Arsène Lupin](https://en.wikipedia.org/wiki/Ars%C3%A8ne_Lupin), the fictional gentleman thief due to the art of hiding data in plain sight.
 
 ## 🚀 Quick Start
 

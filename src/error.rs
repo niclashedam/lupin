@@ -63,6 +63,12 @@ pub enum LupinError {
         source: io::Error,
     },
 
+    #[error("Embedding operation failed. Is there already hidden data in the source file?")]
+    EmbedCollision {
+        #[source]
+        source: io::Error,
+    },
+
     #[error("Extraction operation failed")]
     ExtractFailed {
         #[source]
