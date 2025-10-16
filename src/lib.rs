@@ -61,7 +61,7 @@ impl EngineRouter {
             }
         }
 
-        Err(crate::error::LupinError::Io {
+        Err(crate::error::LupinError::EngineDetection {
             source: io::Error::new(
                 io::ErrorKind::Unsupported,
                 "Unsupported file format - no matching engine found",
@@ -70,41 +70,91 @@ impl EngineRouter {
     }
 }
 
-// Unit tests to make sure we don't break anything
 #[cfg(test)]
 mod tests {
-    use crate::engines::PdfEngine;
-    use crate::{EngineRouter, SteganographyEngine};
+    use super::*;
 
-    #[test]
-    fn test_pdf_engine_magic_bytes() {
-        let engine = PdfEngine::new();
-        assert_eq!(engine.magic_bytes(), b"%PDF");
-        assert_eq!(engine.format_name(), "PDF");
+    fn create_minimal_pdf() -> Vec<u8> {
+        b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n>>\nendobj\nxref\n0 1\n0000000000 65535 f\ntrailer\n<<\n/Size 1\n/Root 1 0 R\n>>\nstartxref\n73\n%%EOF".to_vec()
+    }
+
+    fn create_unsupported_format() -> Vec<u8> {
+        b"RIFF....WEBP".to_vec() // WebP format
     }
 
     #[test]
-    fn test_engine_router_detection() {
+    fn test_detect_engine_pdf() {
+        // Arrange
         let router = EngineRouter::new();
+        let pdf_data = create_minimal_pdf();
 
-        // Test PDF detection
-        let pdf_data = b"%PDF-1.4\nSome PDF content";
-        let engine = router.detect_engine(pdf_data).unwrap();
-        assert_eq!(engine.format_name(), "PDF");
+        // Act
+        let result = router.detect_engine(&pdf_data);
 
-        // Test unsupported format
-        let unknown_data = b"Unknown file format";
-        let result = router.detect_engine(unknown_data);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_engine_router_supported_formats() {
-        let router = EngineRouter::new();
-        // Test that we have at least PDF support
-        let pdf_data = b"%PDF-1.4\nSome PDF content";
-        let result = router.detect_engine(pdf_data);
+        // Assert
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().format_name(), "PDF");
+
+        let engine = result.unwrap();
+        assert_eq!(engine.format_name(), "PDF");
+    }
+
+    #[test]
+    fn test_detect_engine_unsupported() {
+        // Arrange
+        let router = EngineRouter::new();
+        let unsupported_data = create_unsupported_format();
+
+        // Act
+        let result = router.detect_engine(&unsupported_data);
+
+        // Assert
+        assert!(result.is_err()); // Should return error for unsupported format
+
+        if let Err(error) = result {
+            match error {
+                crate::error::LupinError::EngineDetection { .. } => (), // Should return specific engine detection error
+                other => panic!("Expected EngineDetection error, got {:?}", other),
+            }
+        }
+    }
+
+    #[test]
+    fn test_detect_engine_empty_data() {
+        // Arrange
+        let router = EngineRouter::new();
+        let empty_data = Vec::new();
+
+        // Act
+        let result = router.detect_engine(&empty_data);
+
+        // Assert
+        assert!(result.is_err()); // Should return error for empty data
+
+        if let Err(error) = result {
+            match error {
+                crate::error::LupinError::EngineDetection { .. } => (), // Should return specific engine detection error
+                other => panic!("Expected EngineDetection error, got {:?}", other),
+            }
+        }
+    }
+
+    #[test]
+    fn test_detect_engine_partial_magic_bytes() {
+        // Arrange
+        let router = EngineRouter::new();
+        let partial_pdf = b"%PD".to_vec(); // Only partial PDF magic bytes
+
+        // Act
+        let result = router.detect_engine(&partial_pdf);
+
+        // Assert
+        assert!(result.is_err()); // Should return error for partial magic bytes
+
+        if let Err(error) = result {
+            match error {
+                crate::error::LupinError::EngineDetection { .. } => (), // Should return specific engine detection error
+                other => panic!("Expected EngineDetection error, got {:?}", other),
+            }
+        }
     }
 }

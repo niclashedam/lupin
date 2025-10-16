@@ -13,13 +13,14 @@
 // limitations under the License.
 
 use clap::{Parser, Subcommand, ValueEnum};
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use lupin::error::{LupinError, Result};
 use lupin::operations;
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
 use std::fs;
 use std::io::{self, Write};
 use std::path::PathBuf;
+use std::process::ExitCode;
 
 /// Log level for controlling output verbosity
 #[derive(Debug, Clone, ValueEnum)]
@@ -38,6 +39,7 @@ enum LogLevel {
 #[derive(Parser, Debug)]
 #[command(name = "lupin")]
 #[command(version, about, long_about = None)]
+#[command(arg_required_else_help = true)]
 struct CliArgs {
     /// Set log level explicitly
     #[arg(long, value_enum)]
@@ -52,7 +54,7 @@ struct CliArgs {
     quiet: bool,
 
     #[command(subcommand)]
-    command: Option<Command>,
+    command: Command,
 }
 
 /// Available commands
@@ -99,7 +101,7 @@ fn init_logging(log_level: Option<LogLevel>, verbose: bool, quiet: bool) {
         TerminalMode::Mixed,
         ColorChoice::Auto,
     )
-    .expect("Failed to initialize logger");
+    .ok(); // Ignore error if logger is already initialized
 
     // Warn if both explicit log-level and shorthand flags are used
     if log_level.is_some() && (verbose || quiet) {
@@ -150,8 +152,7 @@ fn handle_embed(src: PathBuf, payload: PathBuf, output: PathBuf) -> Result<()> {
     // Display results
     debug!("Using {} engine", result.engine);
     info!(
-        "Embedded {} payload into {} source → {} output (+{:.0}%)",
-        format_size(result.payload_size),
+        "Embedded payload into {} source → {} output (+{:.0}%)",
         format_size(result.source_size),
         format_size(result.output_size),
         ((result.output_size as f64 / result.source_size as f64 - 1.0) * 100.0).round()
@@ -199,26 +200,34 @@ fn handle_extract(src: PathBuf, output: PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn main() -> Result<()> {
+fn main() -> ExitCode {
     let args = CliArgs::parse();
 
     // Initialize logging based on verbosity flags
     init_logging(args.log_level, args.verbose, args.quiet);
 
-    // If no command is provided, clap will handle help/error automatically
-    let command = match args.command {
-        Some(cmd) => cmd,
-        None => return Ok(()),
-    };
-
     debug!("Verbose mode enabled");
 
-    match command {
+    // Execute command and handle errors with pretty printing
+    let result = match args.command {
         Command::Embed {
             src,
             payload,
             output,
         } => handle_embed(src, payload, output),
         Command::Extract { src, output } => handle_extract(src, output),
+    };
+
+    // Handle errors with pretty printing using the log system
+    match result {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            // print the user-friendly error message (from thiserror Display)
+            error!("{}", error);
+
+            // Log detailed debug information including source chain
+            error!("{:?}", error);
+            ExitCode::FAILURE
+        }
     }
 }
