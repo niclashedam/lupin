@@ -35,7 +35,7 @@ enum LogLevel {
     Debug,
 }
 
-/// A blazing-fast steganography tool for concealing data inside PDF files
+/// A blazing-fast steganography tool for concealing data inside files
 #[derive(Parser, Debug)]
 #[command(name = "lupin")]
 #[command(version, about, long_about = None)]

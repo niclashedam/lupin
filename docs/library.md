@@ -20,7 +20,7 @@ let payload_data = std::fs::read("secret.txt")?;
 
 // Embed with rich metadata
 let (embedded_data, embed_result) = embed(&source_data, &payload_data)?;
-println!("Embedded {} bytes using {} engine", 
+println!("Embedded {} bytes using {} engine",
          embed_result.payload_size, embed_result.engine);
 
 // Save result
@@ -83,7 +83,7 @@ let payload_data = b"secret message".to_vec();
 
 // Embed without touching filesystem
 let (result, metadata) = embed(&source_data, &payload_data)?;
-println!("Output size: {} bytes (+{:.1}% increase)", 
+println!("Output size: {} bytes (+{:.1}% increase)",
          metadata.output_size,
          (metadata.output_size as f64 / metadata.source_size as f64 - 1.0) * 100.0);
 

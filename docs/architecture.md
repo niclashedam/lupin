@@ -46,7 +46,7 @@ lupin/
 │   └── engines/
 │       ├── mod.rs           # Engine module declarations
 │       ├── pdf.rs           # PDF steganography engine
-│       ├── png.rs           # PNG steganography engine (LSB)
+│       ├── png.rs           # PNG steganography engine (ancillary chunks)
 │       └── README.md        # Guide for adding new engines
 ├── examples/
 │   ├── README.md            # Sample JPG for later implementation

@@ -42,7 +42,7 @@ pub trait SteganographyEngine {
 /// File format detector that routes to appropriate engines
 #[derive(Default)]
 pub struct EngineRouter {
-    pub engines: Vec<Box<dyn SteganographyEngine>>,
+    engines: Vec<Box<dyn SteganographyEngine>>,
 }
 
 impl EngineRouter {
