@@ -46,10 +46,14 @@ lupin/
 │   └── engines/
 │       ├── mod.rs           # Engine module declarations
 │       ├── pdf.rs           # PDF steganography engine
+│       ├── png.rs           # PNG steganography engine (LSB)
 │       └── README.md        # Guide for adding new engines
 ├── examples/
+│   ├── README.md            # Sample JPG for later implementation
 │   ├── cat.pdf              # Sample PDF for testing
 │   ├── out.pdf              # Sample output PDF after embedding message.txt
+│   ├── cat.png              # Sample PNG for testing
+│   ├── out.png              # Sample output PNG after embedding message.txt
 │   └── message.txt          # Sample payload file
 ├── docs/                    # Documentation
 └── .github/workflows/       # CI/CD pipelines
@@ -83,20 +87,4 @@ The CLI and detection logic automatically work with new engines!
 
 ## Engines
 
-### PDF Engine
-
-The PDF engine is responsible for handling PDF files. It implements the `SteganographyEngine` trait and provides the necessary methods for embedding and extracting data. The PDF engine works by:
-
-1. **EOF marker**: Locates the `%%EOF` marker at the end of the PDF.
-2. **Encoding payload**: Base64 encodes the payload data to avoid corruption of the PDF structure.
-3. **Embedding**: Adds the encoded payload after the EOF marker.
-4. **Extraction**: Reads everything after EOF and base64 decodes it.
-
-This means you can extract hidden data using standard command-line tools:
-
-```bash
-# Extract from a PDF without using Lupin (using standard tools)
-tail -n 1 examples/out.pdf | cut -c 6- | base64 -d
-```
-
-However, we recommend using Lupin to ensure compatibility and proper error handling.
+See the [Engines Guide](docs/engines/README.md) for details on existing engines and how to add new ones.

@@ -17,7 +17,7 @@ pub mod engines;
 pub mod error;
 pub mod operations;
 
-use crate::engines::PdfEngine;
+use crate::engines::{PdfEngine, PngEngine};
 use crate::error::Result;
 use std::io;
 
@@ -49,7 +49,7 @@ impl EngineRouter {
     /// Creates a new router with all available engines
     pub fn new() -> Self {
         Self {
-            engines: vec![Box::new(PdfEngine::new())],
+            engines: vec![Box::new(PdfEngine::new()), Box::new(PngEngine::new())],
         }
     }
 
@@ -78,6 +78,16 @@ mod tests {
         b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n>>\nendobj\nxref\n0 1\n0000000000 65535 f\ntrailer\n<<\n/Size 1\n/Root 1 0 R\n>>\nstartxref\n73\n%%EOF".to_vec()
     }
 
+    fn create_minimal_png() -> Vec<u8> {
+        let mut png = Vec::new();
+        png.extend_from_slice(b"\x89PNG\r\n\x1a\n"); // PNG signature
+        png.extend_from_slice(&[0, 0, 0, 13]); // IHDR length
+        png.extend_from_slice(b"IHDR");
+        png.extend_from_slice(&[0; 13]); // IHDR data
+        png.extend_from_slice(&[0; 4]); // CRC
+        png
+    }
+
     fn create_unsupported_format() -> Vec<u8> {
         b"RIFF....WEBP".to_vec() // WebP format
     }
@@ -96,6 +106,22 @@ mod tests {
 
         let engine = result.unwrap();
         assert_eq!(engine.format_name(), "PDF");
+    }
+
+    #[test]
+    fn test_detect_engine_png() {
+        // Arrange
+        let router = EngineRouter::new();
+        let png_data = create_minimal_png();
+
+        // Act
+        let result = router.detect_engine(&png_data);
+
+        // Assert
+        assert!(result.is_ok());
+
+        let engine = result.unwrap();
+        assert_eq!(engine.format_name(), "PNG");
     }
 
     #[test]
