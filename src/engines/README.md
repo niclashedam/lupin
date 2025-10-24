@@ -5,6 +5,7 @@ This directory contains steganography engines for different file formats.
 ## Current Engines
 
 ### PDF Engine (`pdf.rs`)
+
 **Technique**: Appends data after the `%%EOF` marker
 
 - **How it works**: PDF readers typically ignore data after the `%%EOF` marker, so we can safely append Base64-encoded payload data there
@@ -13,11 +14,12 @@ This directory contains steganography engines for different file formats.
   - File size increases by ~1.33× payload size (Base64 encoding)
 - **Visibility**: Data is visible in a hex editor but ignored by PDF readers
 - **Format**: `[Base64 Payload]` appended after `%%EOF`
-- **Limitations**: 
+- **Limitations**:
   - Easily detectable
   - Not truly "hidden" - just stored in out-of-bounds
 
 ### PNG Engine (`png.rs`)
+
 **Technique**: Custom ancillary chunk steganography
 
 - **How it works**: Adds a custom `lpNg` chunk to the PNG file before the IEND chunk. Payload is Base64-encoded before storage. PNG readers ignore unknown ancillary chunks, so the image displays normally.
@@ -26,7 +28,7 @@ This directory contains steganography engines for different file formats.
   - File size increases by ~1.33× payload size + 12 bytes (Base64 encoding + chunk overhead)
 - **Visibility**: Image appears completely normal with zero visual artifacts
 - **Format**: `[4 bytes: Length][4 bytes: "lpNg"][N bytes: Base64 Payload][4 bytes: CRC32]`
-- **Limitations**: 
+- **Limitations**:
   - Easily detectable (visible in chunk list and hex editor)
   - Not truly "hidden" - just stored in metadata
 

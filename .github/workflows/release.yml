@@ -26,16 +26,18 @@ jobs:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
           body: |
-            ## Changes
+            ## [x.y.z] 20xx-yy-zz
 
-            ## Usage
+            ### Added
 
-            ```bash
-            # Embed a file into a PDF
-            lupin embed source.pdf payload.bin output.pdf
 
-            # Extract hidden data from a PDF
-            lupin extract embedded.pdf output.bin
+            ### Supported Formats
+
+            ### Technical Details
+
+            ### API Stability
+
+            [x.y.z]: https://github.com/niclashedam/lupin/releases/tag/vx.y.z
             ```
           draft: false
           prerelease: false

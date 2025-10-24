@@ -3,6 +3,7 @@
 ## Installation
 
 ### Build from Source
+
 ```bash
 # Install
 cargo install lupin
@@ -11,6 +12,7 @@ cargo install lupin
 ```
 
 ### Download Binary
+
 Download pre-built binaries from the [releases page](https://github.com/niclashedam/lupin/releases).
 
 ## Basic Usage
@@ -20,16 +22,19 @@ Lupin automatically detects the file format and uses the appropriate steganograp
 ### Embed a payload
 
 **PDF files** (appends data after `%%EOF` marker):
+
 ```bash
 lupin embed source.pdf payload.txt output.pdf
 ```
 
-**PNG files** (uses LSB steganography in pixel data):
+**PNG files** (uses custom ancillary chunks with zero visual artifacts):
+
 ```bash
 lupin embed photo.png message.txt stego_photo.png
 ```
 
 ### Extract hidden payload
+
 ```bash
 # Extract to a file
 lupin extract output.pdf payload.txt
@@ -44,14 +49,16 @@ lupin extract output.pdf -
 Lupin provides flexible logging and output control:
 
 ### Log Levels
+
 ```bash
 lupin --log-level debug embed source.pdf payload.txt output.pdf    # Detailed debug info
-lupin --log-level info embed source.pdf payload.txt output.pdf     # Normal operation info  
+lupin --log-level info embed source.pdf payload.txt output.pdf     # Normal operation info
 lupin --log-level warn embed source.pdf payload.txt output.pdf     # Warnings only
 lupin --log-level error embed source.pdf payload.txt output.pdf    # Errors only
 ```
 
 ### Shorthand Options
+
 ```bash
 lupin --verbose embed source.pdf payload.txt output.pdf            # Same as --log-level debug
 lupin --quiet embed source.pdf payload.txt output.pdf              # Same as --log-level error
@@ -62,17 +69,19 @@ lupin --quiet embed source.pdf payload.txt output.pdf              # Same as --l
 ### Example Output
 
 **Verbose mode:**
+
 ```bash
 lupin --verbose embed document.pdf secret.txt output.pdf
 # Output:
 # [DEBUG] Verbose mode enabled
-# [DEBUG] Running command: embed  
+# [DEBUG] Running command: embed
 # [DEBUG] Source: document.pdf, Payload: secret.txt, Output: output.pdf
 # [DEBUG] Using PDF engine
 # [INFO] Embedded 1.2 KiB payload into 234.5 KiB source → 235.8 KiB output (+1%)
 ```
 
 **Normal mode:**
+
 ```bash
 lupin embed document.pdf secret.txt output.pdf
 # Output:
@@ -80,6 +89,7 @@ lupin embed document.pdf secret.txt output.pdf
 ```
 
 **Quiet mode:**
+
 ```bash
 lupin --quiet embed document.pdf secret.txt output.pdf
 # Output: (none, unless there's an error)
@@ -90,12 +100,14 @@ lupin --quiet embed document.pdf secret.txt output.pdf
 ### Hide Different File Types
 
 **Text message:**
+
 ```bash
 echo "Meet me at the park at 5 pm" > secret.txt
 lupin embed document.pdf secret.txt innocent_looking.pdf
 ```
 
 **Image:**
+
 ```bash
 # Hide an image in a PDF
 lupin embed report.pdf vacation_photo.jpg boring_report.pdf
@@ -105,6 +117,7 @@ lupin embed cover.png hidden.jpg stego_cover.png
 ```
 
 **Archive:**
+
 ```bash
 # Create a zip archive
 zip -r secrets.zip confidential_folder/
@@ -116,11 +129,13 @@ lupin embed presentation.pdf secrets.zip presentation_with_secrets.pdf
 ### Extract and Process
 
 **Extract to file:**
+
 ```bash
 lupin extract presentation_with_secrets.pdf extracted_secrets.zip
 ```
 
 **Extract and pipe to another command:**
+
 ```bash
 lupin extract presentation_with_secrets.pdf - | unzip -
 lupin extract hidden_data.pdf - | file -

@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/niclashedam/lupin/actions/workflows/ci.yml/badge.svg?branch=master)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
-![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)
+![Rust](https://img.shields.io/badge/rust-1.70%2B-red.svg)
 ![Crates.io](https://img.shields.io/crates/v/lupin.svg)
 
 A blazing-fast, lightweight steganography tool for concealing data inside normal-looking files. Lupin can be used as a CLI tool for quick operations or as a Rust library for integration into your applications.
@@ -29,7 +29,7 @@ cargo install lupin
 # Hide data in PDF
 lupin embed document.pdf secret.txt output.pdf
 
-# Extract data  
+# Extract data
 lupin extract output.pdf recovered.txt
 
 # More options
@@ -43,7 +43,7 @@ More info in the [CLI Guide](docs/cli.md).
 ```toml
 # Cargo.toml
 [dependencies]
-lupin = "0.2.1"
+lupin = "1.0"
 ```
 
 ```rust
@@ -66,7 +66,7 @@ More info in the [Library Guide](docs/library.md).
 ## 📚 Documentation
 
 - **[CLI Guide](docs/cli.md)** - Command-line usage, logging, examples
-- **[Library Guide](docs/library.md)** - Rust API, integration examples  
+- **[Library Guide](docs/library.md)** - Rust API, integration examples
 - **[Architecture](docs/architecture.md)** - How it works, adding new formats
 
 ## 🤝 Contributing
