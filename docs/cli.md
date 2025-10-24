@@ -15,18 +15,27 @@ Download pre-built binaries from the [releases page](https://github.com/niclashe
 
 ## Basic Usage
 
+Lupin automatically detects the file format and uses the appropriate steganography engine.
+
 ### Embed a payload
+
+**PDF files** (appends data after `%%EOF` marker):
 ```bash
 lupin embed source.pdf payload.txt output.pdf
 ```
 
-### Extract hidden payload
+**PNG files** (uses LSB steganography in pixel data):
 ```bash
-lupin extract output.pdf payload.txt
+lupin embed photo.png message.txt stego_photo.png
 ```
 
-# Extract to stdout (useful for piping)
+### Extract hidden payload
 ```bash
+# Extract to a file
+lupin extract output.pdf payload.txt
+lupin extract stego_photo.png message.txt
+
+# Extract to stdout (useful for piping)
 lupin extract output.pdf -
 ```
 
@@ -88,7 +97,11 @@ lupin embed document.pdf secret.txt innocent_looking.pdf
 
 **Image:**
 ```bash
+# Hide an image in a PDF
 lupin embed report.pdf vacation_photo.jpg boring_report.pdf
+
+# Or hide data in an image itself
+lupin embed cover.png hidden.jpg stego_cover.png
 ```
 
 **Archive:**
@@ -111,53 +124,4 @@ lupin extract presentation_with_secrets.pdf extracted_secrets.zip
 ```bash
 lupin extract presentation_with_secrets.pdf - | unzip -
 lupin extract hidden_data.pdf - | file -
-```
-
-### Scripting Examples
-
-**Batch processing:**
-```bash
-#!/bin/bash
-for pdf in *.pdf; do
-    if lupin --quiet extract "$pdf" "/tmp/extracted_$(basename "$pdf")"; then
-        echo "Found hidden data in $pdf"
-    fi
-done
-```
-
-**Check if PDF contains hidden data:**
-```bash
-if lupin --quiet extract suspicious.pdf /dev/null 2>/dev/null; then
-    echo "PDF contains hidden data"
-else
-    echo "PDF is clean"
-fi
-```
-
-## Help and Version
-
-```bash
-lupin --help         # Show full help
-lupin --version      # Show version information
-lupin embed --help   # Show help for embed command
-lupin extract --help # Show help for extract command
-```
-
-## Exit Codes
-
-- `0`: Success
-- `1`: Error (file not found, unsupported format, etc.)
-
-## Error Handling
-
-Lupin provides clear error messages:
-
-```bash
-# File not found
-lupin embed nonexistent.pdf payload.txt output.pdf
-# Error: SourceFileRead { path: "nonexistent.pdf", source: Os { code: 2, kind: NotFound, message: "No such file or directory" } }
-
-# Unsupported format
-lupin embed document.txt payload.txt output.txt
-# Error: Io { source: Custom { kind: Unsupported, error: "Unsupported file format - no matching engine found" } }
 ```

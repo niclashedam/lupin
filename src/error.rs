@@ -85,6 +85,16 @@ pub enum LupinError {
     #[error("Corrupted hidden data in PDF")]
     PdfCorruptedData,
 
+    /// PNG-specific errors
+    #[error("Invalid PNG: no IDAT chunk found")]
+    PngNoIdatChunk,
+
+    #[error("No hidden data found in PNG")]
+    PngNoHiddenData,
+
+    #[error("Corrupted hidden data in PNG")]
+    PngCorruptedData,
+
     /// Generic I/O error for cases where automatic conversion is desired
     #[error("I/O operation failed")]
     Io {

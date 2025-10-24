@@ -11,6 +11,11 @@ In an era of increasing digital surveillance and diminishing privacy, steganogra
 
 Lupin makes this powerful technique accessible through clean, modern tooling. It is named after [Arsène Lupin](https://en.wikipedia.org/wiki/Ars%C3%A8ne_Lupin), the fictional gentleman thief due to the art of hiding data in plain sight.
 
+## ✨ Supported Formats
+
+- **PDF**: Appends data after the `%%EOF` marker (unlimited capacity, easily detectable)
+- **PNG**: Custom ancillary chunks (unlimited capacity, zero visual artifacts, somewhat easily detectable)
+
 ## 🚀 Quick Start
 
 ### 📱 CLI Tool
@@ -21,7 +26,7 @@ cargo install lupin
 
 # Or build from source: git clone && cargo build --release
 
-# Hide data
+# Hide data in PDF
 lupin embed document.pdf secret.txt output.pdf
 
 # Extract data  

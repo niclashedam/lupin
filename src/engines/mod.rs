@@ -15,6 +15,8 @@
 //! Steganography engines for different file formats
 
 pub mod pdf;
+pub mod png;
 
 // Re-export engines for convenience
 pub use pdf::PdfEngine;
+pub use png::PngEngine;
