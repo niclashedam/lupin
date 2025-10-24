@@ -73,7 +73,8 @@ enum Command {
     Extract {
         /// Source file to extract from
         src: PathBuf,
-        /// Output file path (use "-" for stdout)
+        /// Output file path
+        /// (use "-" for stdout, which forces log-level to ERROR)
         output: PathBuf,
     },
 }
@@ -202,9 +203,21 @@ fn handle_extract(src: PathBuf, output: PathBuf) -> Result<()> {
 
 fn main() -> ExitCode {
     let args = CliArgs::parse();
+    let mut forced_quiet = false;
+
+    // check if extract was called with output as "-"
+    if let Command::Extract { output, .. } = &args.command {
+        if output.as_os_str() == "-" {
+            forced_quiet = true; // suppress normal output when writing to stdout
+        }
+    }
 
     // Initialize logging based on verbosity flags
-    init_logging(args.log_level, args.verbose, args.quiet);
+    if forced_quiet {
+        init_logging(Some(LogLevel::Error), false, true);
+    } else {
+        init_logging(args.log_level, args.verbose, args.quiet);
+    }
 
     debug!("Verbose mode enabled");
 
