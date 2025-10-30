@@ -95,6 +95,22 @@ pub enum LupinError {
     #[error("Corrupted hidden data in PNG")]
     PngCorruptedData,
 
+    /// JPEG-specific errors
+    #[error("Invalid JPEG format: {reason}")]
+    JpegInvalidFormat { reason: String },
+
+    #[error("No hidden data found in JPEG")]
+    JpegNoHiddenData,
+
+    #[error("JPEG payload too large: max {max_size} bytes, got {actual_size} bytes")]
+    JpegPayloadTooLarge { max_size: usize, actual_size: usize },
+
+    #[error("Failed to extract data from JPEG")]
+    JpegExtractionFailed {
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+
     /// Generic I/O error for cases where automatic conversion is desired
     #[error("I/O operation failed")]
     Io {
