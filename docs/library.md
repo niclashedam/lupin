@@ -177,6 +177,11 @@ LupinError::UnsupportedFormat          // File format not supported
 LupinError::PdfNoEofMarker            // Invalid PDF (no %%EOF)
 LupinError::PdfNoHiddenData           // No steganographic data found
 LupinError::PdfCorruptedData          // Hidden data is corrupted
+LupinError::PngNoIdatChunk            // Invalid PNG (no IDAT chunk)
+LupinError::PngNoHiddenData           // No steganographic data found
+LupinError::PngCorruptedData          // Hidden data is corrupted
+LupinError::JpegInvalidFormat { reason }             // Invalid JPEG (e.g. no SOI marker)
+LupinError::JpegNoHiddenData                         // No steganographic data found
 LupinError::SourceFileRead { path, source }     // CLI: Can't read source file
 LupinError::PayloadFileRead { path, source }    // CLI: Can't read payload file
 LupinError::OutputFileWrite { path, source }    // CLI: Can't write output file

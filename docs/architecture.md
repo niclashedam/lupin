@@ -47,13 +47,15 @@ lupin/
 │       ├── mod.rs           # Engine module declarations
 │       ├── pdf.rs           # PDF steganography engine
 │       ├── png.rs           # PNG steganography engine (ancillary chunks)
+│       ├── jpeg.rs          # JPEG steganography engine (APP13 marker)
 │       └── README.md        # Guide for adding new engines
 ├── examples/
-│   ├── README.md            # Sample JPG for later implementation
 │   ├── cat.pdf              # Sample PDF for testing
 │   ├── out.pdf              # Sample output PDF after embedding message.txt
 │   ├── cat.png              # Sample PNG for testing
 │   ├── out.png              # Sample output PNG after embedding message.txt
+│   ├── cat.jpg              # Sample JPEG for testing
+│   ├── out.jpg              # Sample output JPEG after embedding message.txt
 │   └── message.txt          # Sample payload file
 ├── docs/                    # Documentation
 └── .github/workflows/       # CI/CD pipelines

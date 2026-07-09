@@ -15,6 +15,7 @@ Lupin makes this powerful technique accessible through clean, modern tooling. It
 
 - **PDF**: Appends data after the `%%EOF` marker (unlimited capacity, easily detectable)
 - **PNG**: Custom ancillary chunks (unlimited capacity, zero visual artifacts, somewhat easily detectable)
+- **JPEG**: Signed APP13 application markers, split across segments as needed (unlimited capacity, zero visual artifacts, somewhat easily detectable)
 
 ## 🚀 Quick Start
 

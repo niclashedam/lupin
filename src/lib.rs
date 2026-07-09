@@ -17,7 +17,7 @@ pub mod engines;
 pub mod error;
 pub mod operations;
 
-use crate::engines::{PdfEngine, PngEngine};
+use crate::engines::{JpegEngine, PdfEngine, PngEngine};
 use crate::error::Result;
 use std::io;
 
@@ -49,7 +49,11 @@ impl EngineRouter {
     /// Creates a new router with all available engines
     pub fn new() -> Self {
         Self {
-            engines: vec![Box::new(PdfEngine::new()), Box::new(PngEngine::new())],
+            engines: vec![
+                Box::new(PdfEngine::new()),
+                Box::new(PngEngine::new()),
+                Box::new(JpegEngine::new()),
+            ],
         }
     }
 
