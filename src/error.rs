@@ -95,6 +95,13 @@ pub enum LupinError {
     #[error("Corrupted hidden data in PNG")]
     PngCorruptedData,
 
+    /// JPEG-specific errors
+    #[error("Invalid JPEG format: {reason}")]
+    JpegInvalidFormat { reason: String },
+
+    #[error("No hidden data found in JPEG")]
+    JpegNoHiddenData,
+
     /// Generic I/O error for cases where automatic conversion is desired
     #[error("I/O operation failed")]
     Io {

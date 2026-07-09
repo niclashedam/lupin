@@ -1,6 +1,6 @@
 # Lupin Documentation
 
-This directory contains comprehensive documentation for Lupin, a steganography tool for concealing data inside PDF files.
+This directory contains comprehensive documentation for Lupin, a steganography tool for concealing data inside ordinary files (PDF, PNG, and JPEG).
 
 ## 📖 Documentation Index
 

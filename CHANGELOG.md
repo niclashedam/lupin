@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **JPEG steganography engine** - Stores the payload behind a `Lupin\0` signature in signed APP13 application markers, inserted after the leading APPn segments (JFIF ordering preserved). Payloads larger than a single ~64 KB segment are split across multiple consecutive APP13 segments for unlimited capacity. Foreign APP13 segments (e.g. Adobe Photoshop / IPTC) are left untouched and never mistaken for hidden data.
+
+### Supported Formats
+
+- **JPEG** - Inserts the raw payload behind a `Lupin\0` signature in one or more APP13 markers (unlimited capacity, zero visual artifacts, somewhat easily detectable)
+
 ## [1.0.0] - 2025-10-24
 
 ### Added

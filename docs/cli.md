@@ -33,12 +33,19 @@ lupin embed source.pdf payload.txt output.pdf
 lupin embed photo.png message.txt stego_photo.png
 ```
 
+**JPEG files** (uses signed APP13 application markers, split across segments as needed, zero visual artifacts):
+
+```bash
+lupin embed photo.jpg message.txt stego_photo.jpg
+```
+
 ### Extract hidden payload
 
 ```bash
 # Extract to a file
 lupin extract output.pdf payload.txt
 lupin extract stego_photo.png message.txt
+lupin extract stego_photo.jpg message.txt
 
 # Extract to stdout (useful for piping)
 lupin extract output.pdf -
