@@ -7,19 +7,19 @@
 
 A blazing-fast, lightweight steganography tool for concealing data inside normal-looking files. Lupin can be used as a CLI tool for quick operations or as a Rust library for integration into your applications.
 
-In an era of increasing digital surveillance and diminishing privacy, steganography offers an extra layer of protection by hiding the very existence of sensitive communications. Unlike encryption, which makes data unreadable but obvious, steganography makes data invisible.
+Steganography hides the existence of data rather than just its contents. Where encryption makes a message unreadable, steganography makes it invisible: the file still looks and behaves like an ordinary PDF, PNG, or JPEG.
 
-Lupin makes this powerful technique accessible through clean, modern tooling. It is named after [Arsène Lupin](https://en.wikipedia.org/wiki/Ars%C3%A8ne_Lupin), the fictional gentleman thief due to the art of hiding data in plain sight.
+Lupin is named after [Arsène Lupin](https://en.wikipedia.org/wiki/Ars%C3%A8ne_Lupin), the fictional gentleman thief, for the same reason: hiding something in plain sight.
 
-## ✨ Supported Formats
+## Supported Formats
 
 - **PDF**: Appends data after the `%%EOF` marker (unlimited capacity, easily detectable)
 - **PNG**: Custom ancillary chunks (unlimited capacity, zero visual artifacts, somewhat easily detectable)
 - **JPEG**: Signed APP13 application markers, split across segments as needed (unlimited capacity, zero visual artifacts, somewhat easily detectable)
 
-## 🚀 Quick Start
+## Quick Start
 
-### 📱 CLI Tool
+### CLI Tool
 
 ```bash
 # Install
@@ -39,7 +39,7 @@ lupin --help
 
 More info in the [CLI Guide](docs/cli.md).
 
-### 📚 Rust Library
+### Rust Library
 
 ```toml
 # Cargo.toml
@@ -64,19 +64,19 @@ let (extracted, info) = extract(&embedded_data)?;
 
 More info in the [Library Guide](docs/library.md).
 
-## 📚 Documentation
+## Documentation
 
 - **[CLI Guide](docs/cli.md)** - Command-line usage, logging, examples
 - **[Library Guide](docs/library.md)** - Rust API, integration examples
 - **[Architecture](docs/architecture.md)** - How it works, adding new formats
 
-## 🤝 Contributing
+## Contributing
 
 Contributions welcome! Please read the [architecture docs](docs/architecture.md) to understand the codebase structure.
 
-## 📜 License
+## License
 
-Apache License 2.0 — see [LICENSE](LICENSE) for details.
+Apache License 2.0. See [LICENSE](LICENSE) for details.
 
 ---
 
