@@ -6,7 +6,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-lupin = "0.2.1"  # Replace with actual version
+lupin = "1.0"
 ```
 
 ## Quick Start
@@ -20,8 +20,8 @@ let payload_data = std::fs::read("secret.txt")?;
 
 // Embed with rich metadata
 let (embedded_data, embed_result) = embed(&source_data, &payload_data)?;
-println!("Embedded {} bytes using {} engine",
-         embed_result.payload_size, embed_result.engine);
+println!("Embedded {} bytes into {} using {} engine",
+         payload_data.len(), embed_result.source_size, embed_result.engine);
 
 // Save result
 std::fs::write("output.pdf", embedded_data)?;
@@ -50,8 +50,7 @@ pub fn extract(source_data: &[u8]) -> Result<(Vec<u8>, ExtractResult)>
 #[derive(Debug, Clone)]
 pub struct EmbedResult {
     pub source_size: usize,    // Original file size
-    pub payload_size: usize,   // Hidden data size
-    pub output_size: usize,    // Final file size
+    pub output_size: usize,    // Final file size (source + hidden data)
     pub engine: String,        // Engine used (e.g., "PDF")
 }
 
@@ -105,8 +104,11 @@ match embed(&source_data, &payload_data) {
         println!("Success! Used {} engine", metadata.engine);
         std::fs::write("output.pdf", embedded_data)?;
     }
-    Err(LupinError::UnsupportedFormat) => {
+    Err(LupinError::EngineDetection { .. }) => {
         eprintln!("File format not supported");
+    }
+    Err(LupinError::EmbedCollision { .. }) => {
+        eprintln!("File already contains hidden data");
     }
     Err(LupinError::PdfNoEofMarker) => {
         eprintln!("Invalid PDF file");
@@ -155,7 +157,8 @@ mod tests {
         // Embed
         let (embedded, embed_result) = embed(&pdf_data, payload).unwrap();
         assert_eq!(embed_result.engine, "PDF");
-        assert_eq!(embed_result.payload_size, payload.len());
+        assert_eq!(embed_result.source_size, pdf_data.len());
+        assert!(embed_result.output_size > embed_result.source_size);
 
         // Extract
         let (extracted, extract_result) = extract(&embedded).unwrap();
@@ -173,11 +176,13 @@ The full list of error types can always be found in the `lupin::error` module.
 use lupin::error::LupinError;
 
 // Common error types you'll encounter:
-LupinError::UnsupportedFormat          // File format not supported
+LupinError::EngineDetection { source }          // File format not supported
+LupinError::EmbedCollision { source }           // Source already has hidden data
+LupinError::EmptyPayload                        // Payload must not be empty
 LupinError::PdfNoEofMarker            // Invalid PDF (no %%EOF)
 LupinError::PdfNoHiddenData           // No steganographic data found
 LupinError::PdfCorruptedData          // Hidden data is corrupted
-LupinError::PngNoIdatChunk            // Invalid PNG (no IDAT chunk)
+LupinError::PngNoIendChunk            // Invalid PNG (no IEND chunk)
 LupinError::PngNoHiddenData           // No steganographic data found
 LupinError::PngCorruptedData          // Hidden data is corrupted
 LupinError::JpegInvalidFormat { reason }             // Invalid JPEG (e.g. no SOI marker)

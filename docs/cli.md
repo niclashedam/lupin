@@ -75,6 +75,8 @@ lupin --quiet embed source.pdf payload.txt output.pdf              # Same as --l
 
 ### Example Output
 
+Each line is prefixed with a timestamp, thread ID, and module target (e.g. `20:27:37 [DEBUG] (1) lupin: ...`); the examples below omit that prefix for readability.
+
 **Verbose mode:**
 
 ```bash
@@ -84,7 +86,7 @@ lupin --verbose embed document.pdf secret.txt output.pdf
 # [DEBUG] Running command: embed
 # [DEBUG] Source: document.pdf, Payload: secret.txt, Output: output.pdf
 # [DEBUG] Using PDF engine
-# [INFO] Embedded 1.2 KiB payload into 234.5 KiB source → 235.8 KiB output (+1%)
+# [INFO] Embedded payload into 234.5 KiB source → 235.8 KiB output (+1%)
 ```
 
 **Normal mode:**
@@ -92,7 +94,7 @@ lupin --verbose embed document.pdf secret.txt output.pdf
 ```bash
 lupin embed document.pdf secret.txt output.pdf
 # Output:
-# [INFO] Embedded 1.2 KiB payload into 234.5 KiB source → 235.8 KiB output (+1%)
+# [INFO] Embedded payload into 234.5 KiB source → 235.8 KiB output (+1%)
 ```
 
 **Quiet mode:**
@@ -144,6 +146,12 @@ lupin extract presentation_with_secrets.pdf extracted_secrets.zip
 **Extract and pipe to another command:**
 
 ```bash
-lupin extract presentation_with_secrets.pdf - | unzip -
 lupin extract hidden_data.pdf - | file -
+```
+
+Note: piping straight into `unzip` will not work, since `unzip` needs to seek to the end of the archive to read its central directory and can't read a zip file from a pipe. Extract to a file first:
+
+```bash
+lupin extract presentation_with_secrets.pdf secrets.zip
+unzip secrets.zip
 ```

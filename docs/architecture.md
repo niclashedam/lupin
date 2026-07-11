@@ -18,20 +18,20 @@ As such, the entire process works as follows:
 This design separates I/O operations (CLI layer) from steganography logic (library layer), making the code more testable and the library more flexible.
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│ CLI Interface.  │───▶│ Operations       │───▶│ EngineRouter    │
-│                 │    │                  │    │                 │
-│ embed/extract   │    │ Vector-based     │    │ Auto-detection  │
-│ + I/O handling  │    │ + metadata       │    │ Magic bytes     │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                                        │
-                                                        ▼
-                                               ┌─────────────────┐
-                                               │ Format Engine   │
-                                               │   (PDF, etc.)   │
-                                               │ Format-specific │
-                                               │ embed/extract   │
-                                               └─────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ CLI Interface   │───▶│ Operations      │───▶│ EngineRouter    │
+│                 │    │                 │    │                 │
+│ embed/extract   │    │ Vector-based    │    │ Auto-detection  │
+│ + I/O handling  │    │ + metadata      │    │ Magic bytes     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                       │
+                                                       ▼
+                                              ┌─────────────────┐
+                                              │ Format Engine   │
+                                              │ (PDF, etc.)     │
+                                              │ Format-specific │
+                                              │ embed/extract   │
+                                              └─────────────────┘
 ```
 
 ## Project Structure
@@ -89,4 +89,4 @@ The CLI and detection logic automatically work with new engines!
 
 ## Engines
 
-See the [Engines Guide](docs/engines/README.md) for details on existing engines and how to add new ones.
+See the [Engines Guide](../src/engines/README.md) for details on existing engines and how to add new ones.
