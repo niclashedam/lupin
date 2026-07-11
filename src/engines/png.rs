@@ -235,6 +235,11 @@ impl SteganographyEngine for PngEngine {
     }
 
     fn embed(&self, source_data: &[u8], payload: &[u8]) -> Result<Vec<u8>> {
+        // Reject empty payloads so the embed contract is uniform across engines.
+        if payload.is_empty() {
+            return Err(LupinError::EmptyPayload);
+        }
+
         // Find where to insert our custom chunk (before IEND)
         let iend_pos = Self::find_iend_position(source_data)?;
 
@@ -452,7 +457,7 @@ mod tests {
     }
 
     #[test]
-    fn test_round_trip_with_empty_payload() {
+    fn test_embed_empty_payload_rejected() {
         // Arrange
         let engine = PngEngine::new();
         let source = create_minimal_png();
@@ -461,13 +466,8 @@ mod tests {
         // Act
         let result = engine.embed(&source, payload);
 
-        // Assert - empty payload should succeed in embedding
-        assert!(result.is_ok(), "Empty payload should be embeddable");
-
-        if let Ok(embedded) = result {
-            let extracted = engine.extract(&embedded).expect("Extract should succeed");
-            assert_eq!(extracted, payload, "Extracted empty payload should match");
-        }
+        // Assert - empty payloads are rejected for a uniform embed contract
+        assert!(matches!(result, Err(LupinError::EmptyPayload)));
     }
 
     #[test]

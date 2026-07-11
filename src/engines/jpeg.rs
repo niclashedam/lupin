@@ -247,6 +247,11 @@ impl SteganographyEngine for JpegEngine {
     }
 
     fn embed(&self, source_data: &[u8], payload: &[u8]) -> Result<Vec<u8>> {
+        // Reject empty payloads so the embed contract is uniform across engines.
+        if payload.is_empty() {
+            return Err(LupinError::EmptyPayload);
+        }
+
         // Check if there's already a Lupin APP13 segment
         if let Some(&(start, end)) = self.find_lupin_segments(source_data).first() {
             debug!(
@@ -422,13 +427,15 @@ mod tests {
     }
 
     #[test]
-    fn test_empty_payload() {
+    fn test_empty_payload_rejected() {
         let engine = JpegEngine::new();
         let payload = b"";
 
-        let embedded = engine.embed(MINIMAL_JPEG, payload).unwrap();
-        let extracted = engine.extract(&embedded).unwrap();
-        assert_eq!(extracted, payload);
+        // Empty payloads are rejected for a uniform embed contract across engines.
+        assert!(matches!(
+            engine.embed(MINIMAL_JPEG, payload),
+            Err(LupinError::EmptyPayload)
+        ));
     }
 
     #[test]

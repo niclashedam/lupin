@@ -14,7 +14,7 @@
 
 //! High-level operations for embedding and extracting steganographic data
 
-use crate::error::Result;
+use crate::error::{LupinError, Result};
 use crate::EngineRouter;
 
 /// Result of an embed operation
@@ -36,6 +36,12 @@ pub struct ExtractResult {
 /// Embeds payload data inside source data using the appropriate engine
 /// Returns the embedded data and operation metadata
 pub fn embed(source_data: &[u8], payload_data: &[u8]) -> Result<(Vec<u8>, EmbedResult)> {
+    // Reject empty payloads up front: there is nothing to hide, and some engines
+    // (e.g. PDF) would otherwise emit a file indistinguishable from the source.
+    if payload_data.is_empty() {
+        return Err(LupinError::EmptyPayload);
+    }
+
     // Determine the correct engine based on magic bytes
     let router = EngineRouter::new();
     let engine = router.detect_engine(source_data)?;
@@ -99,6 +105,21 @@ mod tests {
         assert_eq!(metadata.engine, "PDF"); // Should use PDF engine
         assert_eq!(metadata.source_size, 125); // Known size of minimal PDF
         assert_eq!(metadata.output_size, 141); // Length of the PDF plus "test message" base64 encoded
+    }
+
+    #[test]
+    fn test_embed_empty_payload_rejected() {
+        // Arrange
+        let source = create_minimal_pdf();
+
+        // Act
+        let result = embed(&source, b"");
+
+        // Assert - empty payloads are rejected regardless of engine
+        assert!(matches!(
+            result,
+            Err(crate::error::LupinError::EmptyPayload)
+        ));
     }
 
     #[test]
