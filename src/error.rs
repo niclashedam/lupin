@@ -20,6 +20,7 @@ use thiserror::Error;
 
 /// Main error type for Lupin
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum LupinError {
     /// File I/O errors with rich context
     #[error("Failed to read source file '{path}'")]
