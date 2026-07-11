@@ -7,13 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-11
+
 ### Added
 
 - **JPEG steganography engine** - Stores the payload behind a `Lupin\0` signature in signed APP13 application markers, inserted after the leading APPn segments (JFIF ordering preserved). Payloads larger than a single ~64 KB segment are split across multiple consecutive APP13 segments for unlimited capacity. Foreign APP13 segments (e.g. Adobe Photoshop / IPTC) are left untouched and never mistaken for hidden data.
 
+### Changed
+
+- `LupinError` is now marked `#[non_exhaustive]`, so future variants can be added without a major version bump. This release still adds `EmptyPayload` (see Fixed below); pin to `1.1` if you match on `LupinError` exhaustively without a wildcard arm.
+- Updated dependencies.
+
+### Fixed
+
+- **Empty payloads now rejected at embed** - Embedding an empty payload into a PDF previously produced a file byte-identical to the source, which then reported "no hidden data" on extract, inconsistent with PNG and JPEG. All engines now reject empty payloads with `LupinError::EmptyPayload`.
+- **PNG double-embed now rejected** - Embedding into a PNG that already carries a Lupin chunk appended a second `lpNg` chunk, whose payload was silently unrecoverable since extraction only reads the first chunk. This now returns `LupinError::EmbedCollision`, matching the PDF and JPEG engines.
+- **Extract success message named the wrong engine** - The message reported "from PDF" regardless of the actual source format; it now reflects the engine used.
+- **PNG `format_ext` now includes the leading dot** (`.png`), matching the PDF (`.pdf`) and JPEG (`.jpg`) engines.
+
 ### Supported Formats
 
 - **JPEG** - Inserts the raw payload behind a `Lupin\0` signature in one or more APP13 markers (unlimited capacity, zero visual artifacts, somewhat easily detectable)
+
+[1.1.0]: https://github.com/niclashedam/lupin/releases/tag/v1.1.0
 
 ## [1.0.0] - 2025-10-24
 
