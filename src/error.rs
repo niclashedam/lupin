@@ -69,6 +69,9 @@ pub enum LupinError {
         source: io::Error,
     },
 
+    #[error("Cannot embed an empty payload")]
+    EmptyPayload,
+
     #[error("Extraction operation failed")]
     ExtractFailed {
         #[source]

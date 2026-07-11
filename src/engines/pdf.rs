@@ -59,6 +59,13 @@ impl SteganographyEngine for PdfEngine {
     }
 
     fn embed(&self, source_data: &[u8], payload: &[u8]) -> Result<Vec<u8>> {
+        // An empty payload appends nothing after %%EOF, producing a file that is
+        // byte-identical to the source and reports "no hidden data" on extract.
+        // Reject it so embed never silently succeeds with nothing to extract.
+        if payload.is_empty() {
+            return Err(LupinError::EmptyPayload);
+        }
+
         let eof_end = self
             .find_eof_end(source_data)
             .ok_or(LupinError::PdfNoEofMarker)?;
@@ -250,11 +257,9 @@ mod tests {
         // Act
         let result = engine.embed(&pdf, payload);
 
-        // Assert
-        assert!(result.is_ok()); // Empty payload should still embed successfully
-
-        let embedded = result.unwrap();
-        assert_eq!(embedded.len(), 125); // Original PDF (125 bytes) + base64 of empty string (0 bytes) = 125
+        // Assert - an empty payload would produce a file identical to the source
+        // (nothing to extract), so it must be rejected.
+        assert!(matches!(result, Err(LupinError::EmptyPayload)));
     }
 
     #[test]
