@@ -39,6 +39,5 @@ Technical documentation about Lupin's design:
 
 ## 💡 Tips
 
-- All documentation includes working code examples
 - The CLI and library share the same underlying engine system
-- Examples are tested and kept up-to-date with the codebase
+- Code examples are not run automatically as part of CI, so verify against the current API if something looks off

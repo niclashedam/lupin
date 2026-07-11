@@ -32,6 +32,20 @@ This directory contains steganography engines for different file formats.
   - Easily detectable (visible in chunk list and hex editor)
   - Not truly "hidden" - just stored in metadata
 
+### JPEG Engine (`jpeg.rs`)
+
+**Technique**: Signed APP13 application marker segments
+
+- **How it works**: Stores the raw payload behind a `Lupin\0` signature in one or more APP13 (`0xFFED`) segments, inserted after the leading APPn segments (JFIF/EXIF) and before the first non-APP marker. The signature distinguishes Lupin's segments from foreign APP13 data (e.g. Adobe Photoshop/IPTC), so those are left untouched and never mistaken for hidden data. A single segment is capped at ~64 KB by its 16-bit length field; larger payloads are split across multiple consecutive APP13 segments and reassembled on extract.
+- **Detection**: Looks for `\xFF\xD8\xFF` magic bytes (SOI followed by the start of the next marker) at the start of the file
+- **Capacity**: Unlimited (payload is split across as many APP13 segments as needed)
+  - File size increases by payload size plus a small per-segment header (marker + length + `Lupin\0` signature)
+- **Visibility**: Image appears completely normal with zero visual artifacts
+- **Format**: `[0xFF 0xED][2 bytes: Length][6 bytes: "Lupin\0"][N bytes: Raw Payload]`, repeated per segment for payloads over ~64 KB
+- **Limitations**:
+  - Easily detectable (visible in segment list and hex editor)
+  - Not truly "hidden" - just stored in metadata
+
 ## Adding New Engines
 
 1. Create a new file (e.g., `myformat.rs`)
