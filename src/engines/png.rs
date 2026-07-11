@@ -166,6 +166,37 @@ impl PngEngine {
         chunk
     }
 
+    /// Checks whether a chunk of the given type is already present.
+    ///
+    /// Used to detect an existing Lupin chunk before embedding so a second
+    /// embed reports a collision instead of silently appending a second chunk
+    /// (which extraction would never reach). Presence is detected regardless of
+    /// CRC validity, mirroring the PDF and JPEG engines' collision checks.
+    fn has_chunk(data: &[u8], chunk_type: &[u8]) -> bool {
+        let mut pos = 8; // Skip PNG signature
+
+        while pos + 8 <= data.len() {
+            let chunk_length =
+                u32::from_be_bytes([data[pos], data[pos + 1], data[pos + 2], data[pos + 3]])
+                    as usize;
+            let current_chunk_type = &data[pos + 4..pos + 8];
+
+            if current_chunk_type == chunk_type {
+                return true;
+            }
+
+            // Move to next chunk
+            pos += 4 + 4 + chunk_length + 4;
+
+            // Stop at IEND
+            if current_chunk_type == b"IEND" {
+                break;
+            }
+        }
+
+        false
+    }
+
     /// Extracts data from a custom chunk if it exists
     fn extract_custom_chunk(data: &[u8], chunk_type: &[u8]) -> Result<Vec<u8>> {
         let mut pos = 8; // Skip PNG signature
@@ -238,6 +269,18 @@ impl SteganographyEngine for PngEngine {
         // Reject empty payloads so the embed contract is uniform across engines.
         if payload.is_empty() {
             return Err(LupinError::EmptyPayload);
+        }
+
+        // Refuse to embed into a PNG that already carries a Lupin chunk;
+        // otherwise a second chunk would be appended and silently lost on
+        // extract (which returns the first match).
+        if Self::has_chunk(source_data, Self::LUPIN_CHUNK_TYPE) {
+            return Err(LupinError::EmbedCollision {
+                source: std::io::Error::new(
+                    std::io::ErrorKind::AlreadyExists,
+                    "PNG already contains a Lupin chunk",
+                ),
+            });
         }
 
         // Find where to insert our custom chunk (before IEND)
@@ -420,6 +463,23 @@ mod tests {
 
         // Assert
         assert_eq!(extracted, payload);
+    }
+
+    #[test]
+    fn test_embed_collision() {
+        // Arrange
+        let engine = PngEngine::new();
+        let source = create_minimal_png();
+
+        // Act - first embed succeeds, second must report a collision
+        let embedded_once = engine.embed(&source, b"first payload").unwrap();
+        let result = engine.embed(&embedded_once, b"second payload");
+
+        // Assert
+        assert!(matches!(result, Err(LupinError::EmbedCollision { .. })));
+
+        // The already-embedded payload must remain intact and extractable
+        assert_eq!(engine.extract(&embedded_once).unwrap(), b"first payload");
     }
 
     #[test]
