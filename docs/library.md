@@ -62,12 +62,9 @@ pub struct ExtractResult {
 }
 ```
 
-## Benefits of Vector-based API
+## Why a byte-vector API
 
-- **Performance**: No intermediate file I/O in library operations, making it adaptable to various data sources.
-- **Flexibility**: Works with data from any source (files, network, memory, etc.).
-- **Testability**: Easy to test with in-memory data.
-- **Clean separation**: I/O concerns handled by your application.
+Operations take and return `&[u8]`/`Vec<u8>` rather than file paths, so the library itself never touches the filesystem. That means you can embed and extract data from files, network responses, or in-memory buffers, and tests can use byte literals directly instead of fixture files. Reading and writing files is left to the caller.
 
 ## Advanced Examples
 

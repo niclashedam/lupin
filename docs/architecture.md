@@ -2,20 +2,20 @@
 
 ## Overview
 
-Lupin uses a **modular engine architecture** with **vector-based operations** that automatically detects file formats and applies the appropriate steganography technique:
+Lupin detects a file's format from its magic bytes and applies the matching steganography technique automatically.
 
 ## Engine System
 
 The core of Lupin is the `SteganographyEngine` trait, which each file format engine implements. The `EngineRouter` manages multiple engines and selects the right one based on magic byte detection.
 
-As such, the entire process works as follows:
+In practice:
 
 1. **Auto-detection**: Lupin matches the file's magic bytes against known engines.
-2. **Vector-based processing**: All operations work on byte vectors (`&[u8]`) for performance and flexibility.
+2. **Vector-based processing**: All operations work on byte vectors (`&[u8]`), so they can run entirely in memory without touching the filesystem.
 3. **Embedding**: Each engine implements format-specific hiding strategies.
 4. **Extraction**: Engines know how to recover hidden data from their format.
 
-This design separates I/O operations (CLI layer) from steganography logic (library layer), making the code more testable and the library more flexible.
+I/O stays in the CLI layer; the library layer only deals in bytes. That keeps the library easy to test and easy to embed in other tools.
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -61,12 +61,9 @@ lupin/
 └── .github/workflows/       # CI/CD pipelines
 ```
 
-## Key Architecture Features
+## Errors and Logging
 
-- **Vector-based operations**: Library functions work with `&[u8]` for performance and flexibility.
-- **Clean separation**: I/O operations handled in CLI, pure logic in library.
-- **Structured errors**: Using `thiserror` for comprehensive error handling.
-- **Advanced logging**: Multiple log levels with `simplelog` integration.
+Errors are structured with `thiserror`, giving each failure mode its own variant and context (see [error.rs](../src/error.rs)). Logging goes through `simplelog`, with independent debug/info/warn/error levels controlled by the CLI flags described in the [CLI Guide](cli.md).
 
 ## Adding New File Format Support
 
@@ -85,7 +82,7 @@ The modular architecture makes it easy to add support for new file formats:
    ```
 3. **Register the engine** in `EngineRouter::new()` in `lib.rs`
 
-The CLI and detection logic automatically work with new engines!
+The CLI and detection logic pick up new engines automatically, no further changes needed.
 
 ## Engines
 

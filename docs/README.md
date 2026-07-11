@@ -1,8 +1,8 @@
 # Lupin Documentation
 
-This directory contains comprehensive documentation for Lupin, a steganography tool for concealing data inside ordinary files (PDF, PNG, and JPEG).
+This directory documents Lupin, a steganography tool for concealing data inside ordinary files (PDF, PNG, and JPEG).
 
-## 📖 Documentation Index
+## Documentation Index
 
 ### [CLI Guide](cli.md)
 Complete guide for using Lupin as a command-line tool:
@@ -29,15 +29,11 @@ Technical documentation about Lupin's design:
 - Adding new file formats
 - How the PDF engine works
 
-## 🚀 Quick Links
+## Quick Links
 
-**New to Lupin?** Start with the [CLI Guide](cli.md) for immediate usage.
+If you're new to Lupin, start with the [CLI Guide](cli.md). To integrate it into your own code, see the [Library Guide](library.md). If you're contributing or adding a new file format, read [Architecture](architecture.md) first.
 
-**Integrating into code?** Check the [Library Guide](library.md) for API examples.
-
-**Contributing or extending?** Read the [Architecture](architecture.md) docs first.
-
-## 💡 Tips
+## Tips
 
 - The CLI and library share the same underlying engine system
 - Code examples are not run automatically as part of CI, so verify against the current API if something looks off
