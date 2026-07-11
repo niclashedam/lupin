@@ -86,8 +86,8 @@ pub enum LupinError {
     PdfCorruptedData,
 
     /// PNG-specific errors
-    #[error("Invalid PNG: no IDAT chunk found")]
-    PngNoIdatChunk,
+    #[error("Invalid PNG: no IEND chunk found")]
+    PngNoIendChunk,
 
     #[error("No hidden data found in PNG")]
     PngNoHiddenData,

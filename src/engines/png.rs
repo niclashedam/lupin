@@ -143,7 +143,7 @@ impl PngEngine {
             pos += 4 + 4 + chunk_length + 4;
         }
 
-        Err(LupinError::PngNoIdatChunk) // Reusing this error for "invalid PNG"
+        Err(LupinError::PngNoIendChunk)
     }
 
     /// Creates a PNG chunk with the given type and data
@@ -231,7 +231,7 @@ impl SteganographyEngine for PngEngine {
     }
 
     fn format_ext(&self) -> &str {
-        "png"
+        ".png"
     }
 
     fn embed(&self, source_data: &[u8], payload: &[u8]) -> Result<Vec<u8>> {
@@ -335,7 +335,7 @@ mod tests {
         let ext = engine.format_ext();
 
         // Assert
-        assert_eq!(ext, "png");
+        assert_eq!(ext, ".png"); // File extension should include the leading dot, like the other engines
     }
 
     #[test]
@@ -371,7 +371,7 @@ mod tests {
         // Assert
         assert!(result.is_err());
         match result {
-            Err(LupinError::PngNoIdatChunk) => (), // Reusing this error
+            Err(LupinError::PngNoIendChunk) => (),
             other => panic!("Expected error, got {:?}", other),
         }
     }
