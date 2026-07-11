@@ -197,7 +197,7 @@ fn handle_extract(src: PathBuf, output: PathBuf) -> Result<()> {
         debug!("Extracted {} from source", format_size(result.payload_size));
     }
 
-    info!("Successfully extracted payload from PDF.");
+    info!("Successfully extracted payload from {}.", result.engine);
     Ok(())
 }
 
