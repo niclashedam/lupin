@@ -39,6 +39,23 @@ lupin embed photo.png message.txt stego_photo.png
 lupin embed photo.jpg message.txt stego_photo.jpg
 ```
 
+### Choosing capacity vs. stealth
+
+`lupin embed` accepts a mode flag:
+
+- `--capacity` (default): unlimited payload size, but easy to spot with `strings` or a hex dump. Used automatically if neither flag is passed.
+- `--stealth`: reserved for a future strategy that resists casual detection. **No format implements it yet** — requesting it returns a clear error rather than silently falling back to capacity mode.
+
+```bash
+# Default: capacity mode
+lupin embed document.pdf secret.txt output.pdf
+
+# Stealth mode (currently returns "Stealth mode is not yet supported")
+lupin embed document.pdf secret.txt output.pdf --stealth
+```
+
+Extraction never takes a mode flag — `lupin extract` detects the payload automatically.
+
 ### Extract hidden payload
 
 ```bash

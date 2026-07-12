@@ -17,6 +17,8 @@ Lupin is named after [Arsène Lupin](https://en.wikipedia.org/wiki/Ars%C3%A8ne_L
 - **PNG**: Custom ancillary chunks (unlimited capacity, zero visual artifacts, somewhat easily detectable)
 - **JPEG**: Signed APP13 application markers, split across segments as needed (unlimited capacity, zero visual artifacts, somewhat easily detectable)
 
+All three engines currently optimize for **capacity**: unlimited size, but easy to spot with `strings`. The CLI and API carry an `--capacity` / `--stealth` selector for a future low-detectability strategy; no engine implements `--stealth` yet, so requesting it returns a clear error. See the [CLI](docs/cli.md) and [library](docs/library.md) guides.
+
 ## Quick Start
 
 ### CLI Tool
@@ -49,16 +51,17 @@ lupin = "1.0"
 
 ```rust
 use lupin::operations::{embed, extract};
+use lupin::EmbedMode;
 
 // Read files
 let source = std::fs::read("document.pdf")?;
 let payload = std::fs::read("secret.txt")?;
 
 // Embed with metadata
-let (embedded_data, metadata) = embed(&source, &payload)?;
+let (embedded_data, metadata) = embed(&source, &payload, EmbedMode::Capacity)?;
 println!("Used {} engine", metadata.engine);
 
-// Extract
+// Extract (mode is autodetected)
 let (extracted, info) = extract(&embedded_data)?;
 ```
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Embed mode selector (`--capacity` / `--stealth`)** - `lupin embed` and `operations::embed()` now take an `EmbedMode` that chooses the embedding strategy. `Capacity` (the default) is the existing behavior: unlimited payload size, easily detected by a `strings`/hex-dump pass. `Stealth` is reserved for a future low-detectability strategy; no engine implements it yet, so requesting it returns the new `LupinError::StealthNotSupported { format }` rather than silently falling back to capacity. `EmbedMode` is `#[non_exhaustive]`, so further modes can be added later without a breaking change.
+
+### Changed
+
+- **BREAKING: `embed` now takes an `EmbedMode` argument.** `operations::embed(source, payload)` becomes `operations::embed(source, payload, mode)`, and `SteganographyEngine::embed` gains the same parameter. Pass `EmbedMode::Capacity` to preserve the previous behavior. `operations::extract()` and `SteganographyEngine::extract` are unchanged and detect the payload automatically without being told the mode.
+
 ## [1.1.0] - 2026-07-11
 
 ### Added

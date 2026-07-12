@@ -15,7 +15,7 @@
 //! High-level operations for embedding and extracting steganographic data
 
 use crate::error::{LupinError, Result};
-use crate::EngineRouter;
+use crate::{EmbedMode, EngineRouter};
 
 /// Result of an embed operation
 #[derive(Debug, Clone)]
@@ -33,9 +33,13 @@ pub struct ExtractResult {
     pub engine: String,
 }
 
-/// Embeds payload data inside source data using the appropriate engine
+/// Embeds payload data inside source data using the appropriate engine and mode
 /// Returns the embedded data and operation metadata
-pub fn embed(source_data: &[u8], payload_data: &[u8]) -> Result<(Vec<u8>, EmbedResult)> {
+pub fn embed(
+    source_data: &[u8],
+    payload_data: &[u8],
+    mode: EmbedMode,
+) -> Result<(Vec<u8>, EmbedResult)> {
     // Reject empty payloads up front: there is nothing to hide, and some engines
     // (e.g. PDF) would otherwise emit a file indistinguishable from the source.
     if payload_data.is_empty() {
@@ -47,7 +51,7 @@ pub fn embed(source_data: &[u8], payload_data: &[u8]) -> Result<(Vec<u8>, EmbedR
     let engine = router.detect_engine(source_data)?;
 
     // Embed the payload data using the detected engine
-    let embedded_data = engine.embed(source_data, payload_data)?;
+    let embedded_data = engine.embed(source_data, payload_data, mode)?;
 
     // Create the result metadata
     let result = EmbedResult {
@@ -90,7 +94,7 @@ mod tests {
         let payload = b"test message";
 
         // Act
-        let result = embed(&source, payload);
+        let result = embed(&source, payload, EmbedMode::Capacity);
 
         // Assert
         assert!(result.is_ok()); // Embed operation should succeed
@@ -113,7 +117,7 @@ mod tests {
         let source = create_minimal_pdf();
 
         // Act
-        let result = embed(&source, b"");
+        let result = embed(&source, b"", EmbedMode::Capacity);
 
         // Assert - empty payloads are rejected regardless of engine
         assert!(matches!(
@@ -127,7 +131,7 @@ mod tests {
         // Arrange
         let source = create_minimal_pdf();
         let original_payload = b"secret data";
-        let (embedded_data, _) = embed(&source, original_payload).unwrap();
+        let (embedded_data, _) = embed(&source, original_payload, EmbedMode::Capacity).unwrap();
 
         // Act
         let result = extract(&embedded_data);
@@ -144,5 +148,20 @@ mod tests {
         assert_eq!(metadata.engine, "PDF"); // Should use PDF engine
         assert_eq!(metadata.source_size, embedded_data.len()); // Should match input size
         assert_eq!(metadata.payload_size, 11); // Length of "secret data"
+    }
+
+    #[test]
+    fn test_embed_stealth_mode_threads_through_to_engine() {
+        // No engine implements stealth mode yet, so the request must surface the engine's
+        // StealthNotSupported error through the public API (proving the mode is wired all
+        // the way down, not silently dropped or coerced to capacity).
+        let source = create_minimal_pdf();
+
+        let result = embed(&source, b"stealthy secret", EmbedMode::Stealth);
+
+        assert!(matches!(
+            result,
+            Err(LupinError::StealthNotSupported { format: "PDF" })
+        ));
     }
 }

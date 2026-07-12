@@ -53,7 +53,7 @@
 //!
 
 use crate::error::{LupinError, Result};
-use crate::SteganographyEngine;
+use crate::{EmbedMode, SteganographyEngine};
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 
 /// PNG steganography engine
@@ -265,10 +265,17 @@ impl SteganographyEngine for PngEngine {
         ".png"
     }
 
-    fn embed(&self, source_data: &[u8], payload: &[u8]) -> Result<Vec<u8>> {
+    fn embed(&self, source_data: &[u8], payload: &[u8], mode: EmbedMode) -> Result<Vec<u8>> {
         // Reject empty payloads so the embed contract is uniform across engines.
         if payload.is_empty() {
             return Err(LupinError::EmptyPayload);
+        }
+
+        // Exhaustive so a future EmbedMode variant is a compile error here rather than
+        // silently falling through to the capacity implementation below.
+        match mode {
+            EmbedMode::Capacity => {}
+            EmbedMode::Stealth => return Err(LupinError::StealthNotSupported { format: "PNG" }),
         }
 
         // Refuse to embed into a PNG that already carries a Lupin chunk;
@@ -433,7 +440,7 @@ mod tests {
         let expected_size = source.len() + BASE64.encode(payload).len() + 12; // payload + 12 byte chunk header
 
         // Act
-        let result = engine.embed(&source, payload);
+        let result = engine.embed(&source, payload, EmbedMode::Capacity);
 
         // Assert
         assert!(result.is_ok());
@@ -455,7 +462,7 @@ mod tests {
 
         // Act - Embed
         let embedded = engine
-            .embed(&source, payload)
+            .embed(&source, payload, EmbedMode::Capacity)
             .expect("Embed should succeed");
 
         // Act - Extract
@@ -472,8 +479,10 @@ mod tests {
         let source = create_minimal_png();
 
         // Act - first embed succeeds, second must report a collision
-        let embedded_once = engine.embed(&source, b"first payload").unwrap();
-        let result = engine.embed(&embedded_once, b"second payload");
+        let embedded_once = engine
+            .embed(&source, b"first payload", EmbedMode::Capacity)
+            .unwrap();
+        let result = engine.embed(&embedded_once, b"second payload", EmbedMode::Capacity);
 
         // Assert
         assert!(matches!(result, Err(LupinError::EmbedCollision { .. })));
@@ -508,7 +517,7 @@ mod tests {
 
         // Act
         let embedded = engine
-            .embed(&source, &payload)
+            .embed(&source, &payload, EmbedMode::Capacity)
             .expect("Embed should succeed");
         let extracted = engine.extract(&embedded).expect("Extract should succeed");
 
@@ -524,7 +533,7 @@ mod tests {
         let payload = b"";
 
         // Act
-        let result = engine.embed(&source, payload);
+        let result = engine.embed(&source, payload, EmbedMode::Capacity);
 
         // Assert - empty payloads are rejected for a uniform embed contract
         assert!(matches!(result, Err(LupinError::EmptyPayload)));
@@ -537,5 +546,21 @@ mod tests {
 
         // Assert - Known CRC for IEND chunk with no data
         assert_eq!(crc, 0xae426082);
+    }
+
+    #[test]
+    fn test_stealth_mode_not_supported() {
+        // Arrange
+        let engine = PngEngine::new();
+        let source = create_minimal_png();
+
+        // Act
+        let result = engine.embed(&source, b"payload", EmbedMode::Stealth);
+
+        // Assert - PNG has no stealth implementation yet
+        assert!(matches!(
+            result,
+            Err(LupinError::StealthNotSupported { format: "PNG" })
+        ));
     }
 }
