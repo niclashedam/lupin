@@ -73,7 +73,7 @@
 //!
 
 use crate::error::{LupinError, Result};
-use crate::SteganographyEngine;
+use crate::{EmbedMode, SteganographyEngine};
 use log::debug;
 
 /// JPEG steganography engine
@@ -246,10 +246,17 @@ impl SteganographyEngine for JpegEngine {
         ".jpg"
     }
 
-    fn embed(&self, source_data: &[u8], payload: &[u8]) -> Result<Vec<u8>> {
+    fn embed(&self, source_data: &[u8], payload: &[u8], mode: EmbedMode) -> Result<Vec<u8>> {
         // Reject empty payloads so the embed contract is uniform across engines.
         if payload.is_empty() {
             return Err(LupinError::EmptyPayload);
+        }
+
+        // Exhaustive so a future EmbedMode variant is a compile error here rather than
+        // silently falling through to the capacity implementation below.
+        match mode {
+            EmbedMode::Capacity => {}
+            EmbedMode::Stealth => return Err(LupinError::StealthNotSupported { format: "JPEG" }),
         }
 
         // Check if there's already a Lupin APP13 segment
@@ -381,7 +388,9 @@ mod tests {
         let payload = b"Secret message hidden in JPEG!";
 
         // Embed
-        let embedded = engine.embed(MINIMAL_JPEG, payload).unwrap();
+        let embedded = engine
+            .embed(MINIMAL_JPEG, payload, EmbedMode::Capacity)
+            .unwrap();
 
         // Should be larger
         assert!(embedded.len() > MINIMAL_JPEG.len());
@@ -401,10 +410,12 @@ mod tests {
         let payload2 = b"Second payload";
 
         // First embed
-        let embedded_once = engine.embed(MINIMAL_JPEG, payload1).unwrap();
+        let embedded_once = engine
+            .embed(MINIMAL_JPEG, payload1, EmbedMode::Capacity)
+            .unwrap();
 
         // Second embed should fail
-        let result = engine.embed(&embedded_once, payload2);
+        let result = engine.embed(&embedded_once, payload2, EmbedMode::Capacity);
         assert!(matches!(result, Err(LupinError::EmbedCollision { .. })));
     }
 
@@ -422,7 +433,7 @@ mod tests {
         let engine = JpegEngine::new();
         let not_jpeg = b"This is not a JPEG file";
 
-        let result = engine.embed(not_jpeg, b"payload");
+        let result = engine.embed(not_jpeg, b"payload", EmbedMode::Capacity);
         assert!(matches!(result, Err(LupinError::JpegInvalidFormat { .. })));
     }
 
@@ -433,7 +444,7 @@ mod tests {
 
         // Empty payloads are rejected for a uniform embed contract across engines.
         assert!(matches!(
-            engine.embed(MINIMAL_JPEG, payload),
+            engine.embed(MINIMAL_JPEG, payload, EmbedMode::Capacity),
             Err(LupinError::EmptyPayload)
         ));
     }
@@ -443,7 +454,9 @@ mod tests {
         let engine = JpegEngine::new();
         let payload = vec![42u8; 10000]; // 10KB payload
 
-        let embedded = engine.embed(MINIMAL_JPEG, &payload).unwrap();
+        let embedded = engine
+            .embed(MINIMAL_JPEG, &payload, EmbedMode::Capacity)
+            .unwrap();
         let extracted = engine.extract(&embedded).unwrap();
         assert_eq!(extracted, payload);
     }
@@ -455,7 +468,9 @@ mod tests {
         // payload to be split across multiple chained APP13 segments.
         let payload: Vec<u8> = (0..250_000).map(|i| (i % 251) as u8).collect();
 
-        let embedded = engine.embed(MINIMAL_JPEG, &payload).unwrap();
+        let embedded = engine
+            .embed(MINIMAL_JPEG, &payload, EmbedMode::Capacity)
+            .unwrap();
 
         // It must actually have produced more than one Lupin segment.
         assert!(
@@ -475,7 +490,9 @@ mod tests {
         let max_chunk = 0xFFFF - 2 - JpegEngine::LUPIN_SIGNATURE.len();
         for len in [max_chunk - 1, max_chunk, max_chunk + 1] {
             let payload = vec![7u8; len];
-            let embedded = engine.embed(MINIMAL_JPEG, &payload).unwrap();
+            let embedded = engine
+                .embed(MINIMAL_JPEG, &payload, EmbedMode::Capacity)
+                .unwrap();
             let extracted = engine.extract(&embedded).unwrap();
             assert_eq!(extracted, payload, "round trip failed for len {}", len);
         }
@@ -486,7 +503,9 @@ mod tests {
         let engine = JpegEngine::new();
         let payload = "Hello, 世界! 🕵️ Lupin steganography".as_bytes();
 
-        let embedded = engine.embed(MINIMAL_JPEG, payload).unwrap();
+        let embedded = engine
+            .embed(MINIMAL_JPEG, payload, EmbedMode::Capacity)
+            .unwrap();
         let extracted = engine.extract(&embedded).unwrap();
         assert_eq!(extracted, payload);
     }
@@ -516,7 +535,9 @@ mod tests {
         ));
 
         // Embedding must succeed (no collision with the foreign APP13)...
-        let embedded = engine.embed(&jpeg, b"real secret").unwrap();
+        let embedded = engine
+            .embed(&jpeg, b"real secret", EmbedMode::Capacity)
+            .unwrap();
         // ...and round-trip our own payload while leaving the foreign segment intact.
         assert_eq!(engine.extract(&embedded).unwrap(), b"real secret");
     }
@@ -525,7 +546,9 @@ mod tests {
     fn test_extract_coexists_with_foreign_app13() {
         let engine = JpegEngine::new();
         let jpeg = jpeg_with_foreign_app13();
-        let embedded = engine.embed(&jpeg, b"payload").unwrap();
+        let embedded = engine
+            .embed(&jpeg, b"payload", EmbedMode::Capacity)
+            .unwrap();
 
         // The foreign Photoshop marker must still be present in the output.
         assert!(embedded.windows(9).any(|w| w == b"Photoshop"));
@@ -569,10 +592,24 @@ mod tests {
     #[test]
     fn test_insert_preserves_jfif_ordering() {
         let engine = JpegEngine::new();
-        let embedded = engine.embed(MINIMAL_JPEG, b"hi").unwrap();
+        let embedded = engine
+            .embed(MINIMAL_JPEG, b"hi", EmbedMode::Capacity)
+            .unwrap();
 
         // APP0/JFIF must still immediately follow SOI; our APP13 goes after it.
         assert_eq!(&embedded[0..2], &[0xFF, 0xD8]); // SOI
         assert_eq!(&embedded[2..4], &[0xFF, 0xE0]); // APP0 (JFIF) unchanged
+    }
+
+    #[test]
+    fn test_stealth_mode_not_supported() {
+        let engine = JpegEngine::new();
+
+        let result = engine.embed(MINIMAL_JPEG, b"payload", EmbedMode::Stealth);
+
+        assert!(matches!(
+            result,
+            Err(LupinError::StealthNotSupported { format: "JPEG" })
+        ));
     }
 }

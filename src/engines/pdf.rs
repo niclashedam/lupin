@@ -14,7 +14,7 @@
 
 use crate::{
     error::{LupinError, Result},
-    SteganographyEngine,
+    EmbedMode, SteganographyEngine,
 };
 use base64::{engine::general_purpose, Engine as _};
 use log::debug;
@@ -22,7 +22,13 @@ use log::debug;
 /// PDF steganography engine
 ///
 /// PDFs end with %%EOF, but viewers ignore anything after that.
-/// We append a base64-encoded payload after the EOF marker.
+/// We append a base64-encoded payload after the EOF marker (capacity mode).
+///
+/// Only [`EmbedMode::Capacity`] is implemented. Capacity mode is unlimited in size but
+/// trivially spotted by a `strings`/hex-dump pass. A genuine stealth mode for PDF would
+/// need to hide data inside the rendered content (e.g. LSBs of content-stream operands),
+/// which requires decompressing streams and a content parser; until that lands,
+/// [`EmbedMode::Stealth`] returns [`LupinError::StealthNotSupported`].
 pub struct PdfEngine;
 
 impl PdfEngine {
@@ -58,12 +64,18 @@ impl SteganographyEngine for PdfEngine {
         ".pdf"
     }
 
-    fn embed(&self, source_data: &[u8], payload: &[u8]) -> Result<Vec<u8>> {
-        // An empty payload appends nothing after %%EOF, producing a file that is
-        // byte-identical to the source and reports "no hidden data" on extract.
-        // Reject it so embed never silently succeeds with nothing to extract.
+    fn embed(&self, source_data: &[u8], payload: &[u8], mode: EmbedMode) -> Result<Vec<u8>> {
+        // An empty payload would produce a file indistinguishable from the source
+        // (nothing to extract). Reject it up front.
         if payload.is_empty() {
             return Err(LupinError::EmptyPayload);
+        }
+
+        // Exhaustive so a future EmbedMode variant is a compile error here rather than
+        // silently falling through to the capacity implementation below.
+        match mode {
+            EmbedMode::Capacity => {}
+            EmbedMode::Stealth => return Err(LupinError::StealthNotSupported { format: "PDF" }),
         }
 
         let eof_end = self
@@ -217,7 +229,7 @@ mod tests {
         let payload = b"secret message";
 
         // Act
-        let result = engine.embed(&pdf, payload);
+        let result = engine.embed(&pdf, payload, EmbedMode::Capacity);
 
         // Assert
         assert!(result.is_ok()); // Embed operation should succeed with valid PDF
@@ -236,7 +248,7 @@ mod tests {
         let payload = b"secret message";
 
         // Act
-        let result = engine.embed(&invalid_pdf, payload);
+        let result = engine.embed(&invalid_pdf, payload, EmbedMode::Capacity);
 
         // Assert
         assert!(result.is_err()); // Should fail when PDF has no %%EOF marker
@@ -255,7 +267,7 @@ mod tests {
         let payload = b"";
 
         // Act
-        let result = engine.embed(&pdf, payload);
+        let result = engine.embed(&pdf, payload, EmbedMode::Capacity);
 
         // Assert - an empty payload would produce a file identical to the source
         // (nothing to extract), so it must be rejected.
@@ -270,7 +282,7 @@ mod tests {
         pdf.extend_from_slice(b"c2VjcmV0IG1lc3NhZ2U="); // base64 of "secret message"
 
         // Act
-        let result = engine.embed(&pdf, "more secret".as_bytes());
+        let result = engine.embed(&pdf, "more secret".as_bytes(), EmbedMode::Capacity);
 
         // Assert
         assert!(result.is_err()); // Should fail due to embed collision (already embedded PDF)
@@ -385,7 +397,9 @@ mod tests {
 
         // Act
         let binary_payload = b"\x00\x01\x02\xff";
-        let embedded2 = engine.embed(&pdf, binary_payload).unwrap();
+        let embedded2 = engine
+            .embed(&pdf, binary_payload, EmbedMode::Capacity)
+            .unwrap();
         let extracted2 = engine.extract(&embedded2).unwrap();
 
         // Assert
@@ -400,10 +414,29 @@ mod tests {
 
         // Act
         let unicode_payload = "unicode: 🕵️ αβγ δεζ".as_bytes();
-        let embedded3 = engine.embed(&pdf, unicode_payload).unwrap();
+        let embedded3 = engine
+            .embed(&pdf, unicode_payload, EmbedMode::Capacity)
+            .unwrap();
         let extracted3 = engine.extract(&embedded3).unwrap();
 
         // Assert
         assert_eq!(extracted3, "unicode: 🕵️ αβγ δεζ".as_bytes()); // Unicode should round-trip correctly
+    }
+
+    #[test]
+    fn test_stealth_mode_not_supported() {
+        // Arrange - PDF only implements capacity mode for now; stealth must report a
+        // clear error rather than silently falling back to capacity.
+        let engine = PdfEngine::new();
+        let pdf = create_minimal_pdf();
+
+        // Act
+        let result = engine.embed(&pdf, b"payload", EmbedMode::Stealth);
+
+        // Assert
+        assert!(matches!(
+            result,
+            Err(LupinError::StealthNotSupported { format: "PDF" })
+        ));
     }
 }

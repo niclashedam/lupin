@@ -21,6 +21,23 @@ use crate::engines::{JpegEngine, PdfEngine, PngEngine};
 use crate::error::Result;
 use std::io;
 
+/// Selects which embedding strategy an engine should use.
+///
+/// `Capacity` (the default) favors unlimited payload size and reliability at the cost of
+/// being easy to detect (e.g. via `strings` or a hex dump). `Stealth` favors resisting
+/// casual detection, typically at the cost of capacity or added complexity; not every
+/// engine supports it yet.
+///
+/// Marked `#[non_exhaustive]` so future modes can be added without breaking downstream
+/// `match` expressions (matches outside this crate must include a wildcard arm).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
+pub enum EmbedMode {
+    #[default]
+    Capacity,
+    Stealth,
+}
+
 /// Trait for steganography engines that can embed and extract hidden data
 pub trait SteganographyEngine {
     /// Returns the magic bytes that identify this file format
@@ -32,10 +49,13 @@ pub trait SteganographyEngine {
     /// Returns a human-readable extension for this file format
     fn format_ext(&self) -> &str;
 
-    /// Embeds payload data into the source file data
-    fn embed(&self, source_data: &[u8], payload: &[u8]) -> Result<Vec<u8>>;
+    /// Embeds payload data into the source file data using the given mode
+    fn embed(&self, source_data: &[u8], payload: &[u8], mode: EmbedMode) -> Result<Vec<u8>>;
 
-    /// Extracts hidden payload from the file data
+    /// Extracts hidden payload from the file data.
+    ///
+    /// Extraction is not told which [`EmbedMode`] produced the file, so implementations
+    /// must detect the payload automatically regardless of how it was embedded.
     fn extract(&self, source_data: &[u8]) -> Result<Vec<u8>>;
 }
 

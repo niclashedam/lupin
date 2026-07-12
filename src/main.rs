@@ -16,6 +16,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use log::{debug, error, info, warn};
 use lupin::error::{LupinError, Result};
 use lupin::operations;
+use lupin::EmbedMode;
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
 use std::fs;
 use std::io::{self, Write};
@@ -68,6 +69,12 @@ enum Command {
         payload: PathBuf,
         /// Output file path
         output: PathBuf,
+        /// Optimize for stealth (harder to detect) at the cost of capacity or format support
+        #[arg(long, conflicts_with = "capacity")]
+        stealth: bool,
+        /// Optimize for capacity: unlimited size, easier to detect (default)
+        #[arg(long, conflicts_with = "stealth")]
+        capacity: bool,
     },
     /// Extract hidden data from a file
     Extract {
@@ -122,13 +129,14 @@ fn format_size(size: usize) -> String {
 }
 
 /// Handle embed command
-fn handle_embed(src: PathBuf, payload: PathBuf, output: PathBuf) -> Result<()> {
+fn handle_embed(src: PathBuf, payload: PathBuf, output: PathBuf, mode: EmbedMode) -> Result<()> {
     debug!("Running command: embed");
     debug!(
-        "Source: {}, Payload: {}, Output: {}",
+        "Source: {}, Payload: {}, Output: {}, Mode: {:?}",
         src.display(),
         payload.display(),
-        output.display()
+        output.display(),
+        mode
     );
 
     // Read files
@@ -142,7 +150,7 @@ fn handle_embed(src: PathBuf, payload: PathBuf, output: PathBuf) -> Result<()> {
     })?;
 
     // Process
-    let (embedded_data, result) = operations::embed(&source_data, &payload_data)?;
+    let (embedded_data, result) = operations::embed(&source_data, &payload_data, mode)?;
 
     // Write output
     fs::write(&output, &embedded_data).map_err(|e| LupinError::OutputFileWrite {
@@ -227,7 +235,18 @@ fn main() -> ExitCode {
             src,
             payload,
             output,
-        } => handle_embed(src, payload, output),
+            stealth,
+            // `--capacity` only exists to let users state the default explicitly and to
+            // conflict with `--stealth`; capacity is selected whenever `--stealth` is absent.
+            capacity: _,
+        } => {
+            let mode = if stealth {
+                EmbedMode::Stealth
+            } else {
+                EmbedMode::Capacity
+            };
+            handle_embed(src, payload, output, mode)
+        }
         Command::Extract { src, output } => handle_extract(src, output),
     };
 

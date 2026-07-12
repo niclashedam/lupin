@@ -73,6 +73,9 @@ pub enum LupinError {
     #[error("Cannot embed an empty payload")]
     EmptyPayload,
 
+    #[error("Stealth mode is not yet supported for {format}")]
+    StealthNotSupported { format: &'static str },
+
     #[error("Extraction operation failed")]
     ExtractFailed {
         #[source]

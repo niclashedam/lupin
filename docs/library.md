@@ -13,20 +13,22 @@ lupin = "1.0"
 
 ```rust
 use lupin::operations::{embed, extract};
+use lupin::EmbedMode;
 
 // Read source and payload
 let source_data = std::fs::read("document.pdf")?;
 let payload_data = std::fs::read("secret.txt")?;
 
-// Embed with rich metadata
-let (embedded_data, embed_result) = embed(&source_data, &payload_data)?;
+// Embed with rich metadata (EmbedMode::Capacity: unlimited size, easier to detect;
+// EmbedMode::Stealth: harder to detect, not yet supported by every engine)
+let (embedded_data, embed_result) = embed(&source_data, &payload_data, EmbedMode::Capacity)?;
 println!("Embedded {} bytes into {} using {} engine",
          payload_data.len(), embed_result.source_size, embed_result.engine);
 
 // Save result
 std::fs::write("output.pdf", embedded_data)?;
 
-// Extract later
+// Extract later - detection is automatic, no mode needed
 let output_data = std::fs::read("output.pdf")?;
 let (extracted_data, extract_result) = extract(&output_data)?;
 std::fs::write("recovered.txt", extracted_data)?;
@@ -38,10 +40,21 @@ std::fs::write("recovered.txt", extracted_data)?;
 
 ```rust
 use lupin::operations::{embed, extract, EmbedResult, ExtractResult};
+use lupin::EmbedMode;
 
 // Vector-based operations
-pub fn embed(source_data: &[u8], payload_data: &[u8]) -> Result<(Vec<u8>, EmbedResult)>
+pub fn embed(source_data: &[u8], payload_data: &[u8], mode: EmbedMode) -> Result<(Vec<u8>, EmbedResult)>
 pub fn extract(source_data: &[u8]) -> Result<(Vec<u8>, ExtractResult)>
+```
+
+### `EmbedMode`
+
+```rust
+pub enum EmbedMode {
+    Capacity, // default: unlimited payload size, easy to detect
+    Stealth,  // reserved for a future low-detectability strategy; no engine implements
+              // it yet, so passing it returns LupinError::StealthNotSupported
+}
 ```
 
 ### Result Types
@@ -72,13 +85,14 @@ Operations take and return `&[u8]`/`Vec<u8>` rather than file paths, so the libr
 
 ```rust
 use lupin::operations::{embed, extract};
+use lupin::EmbedMode;
 
 // From network or any byte source
 let source_data = download_pdf_from_url("https://example.com/doc.pdf").await?;
 let payload_data = b"secret message".to_vec();
 
 // Embed without touching filesystem
-let (result, metadata) = embed(&source_data, &payload_data)?;
+let (result, metadata) = embed(&source_data, &payload_data, EmbedMode::Capacity)?;
 println!("Output size: {} bytes (+{:.1}% increase)",
          metadata.output_size,
          (metadata.output_size as f64 / metadata.source_size as f64 - 1.0) * 100.0);
@@ -92,11 +106,12 @@ send_to_storage(&result).await?;
 ```rust
 use lupin::error::LupinError;
 use lupin::operations::embed;
+use lupin::EmbedMode;
 
 let source_data = std::fs::read("document.pdf")?;
 let payload_data = std::fs::read("secret.txt")?;
 
-match embed(&source_data, &payload_data) {
+match embed(&source_data, &payload_data, EmbedMode::Capacity) {
     Ok((embedded_data, metadata)) => {
         println!("Success! Used {} engine", metadata.engine);
         std::fs::write("output.pdf", embedded_data)?;
@@ -110,6 +125,10 @@ match embed(&source_data, &payload_data) {
     Err(LupinError::PdfNoEofMarker) => {
         eprintln!("Invalid PDF file");
     }
+    // Returned if you pass EmbedMode::Stealth: no engine implements stealth yet
+    Err(LupinError::StealthNotSupported { format }) => {
+        eprintln!("Stealth mode isn't implemented for {format} yet");
+    }
     Err(e) => {
         eprintln!("Other error: {}", e);
     }
@@ -121,7 +140,7 @@ match embed(&source_data, &payload_data) {
 For more control, you can use the engine system directly:
 
 ```rust
-use lupin::{EngineRouter, SteganographyEngine};
+use lupin::{EmbedMode, EngineRouter, SteganographyEngine};
 
 let router = EngineRouter::new();
 let data = std::fs::read("document.pdf")?;
@@ -132,7 +151,7 @@ println!("Detected format: {}", engine.format_name());
 
 // Use the engine directly
 let payload = b"secret data";
-let result = engine.embed(&data, payload)?;
+let result = engine.embed(&data, payload, EmbedMode::Capacity)?;
 
 // Save the embedded data
 std::fs::write("embedded.pdf", result)?;
@@ -144,6 +163,7 @@ std::fs::write("embedded.pdf", result)?;
 #[cfg(test)]
 mod tests {
     use lupin::operations::{embed, extract};
+    use lupin::EmbedMode;
 
     #[test]
     fn test_round_trip() {
@@ -152,7 +172,7 @@ mod tests {
         let payload = b"test payload";
 
         // Embed
-        let (embedded, embed_result) = embed(&pdf_data, payload).unwrap();
+        let (embedded, embed_result) = embed(&pdf_data, payload, EmbedMode::Capacity).unwrap();
         assert_eq!(embed_result.engine, "PDF");
         assert_eq!(embed_result.source_size, pdf_data.len());
         assert!(embed_result.output_size > embed_result.source_size);
@@ -176,6 +196,7 @@ use lupin::error::LupinError;
 LupinError::EngineDetection { source }          // File format not supported
 LupinError::EmbedCollision { source }           // Source already has hidden data
 LupinError::EmptyPayload                        // Payload must not be empty
+LupinError::StealthNotSupported { format }      // That engine doesn't implement stealth mode yet
 LupinError::PdfNoEofMarker            // Invalid PDF (no %%EOF)
 LupinError::PdfNoHiddenData           // No steganographic data found
 LupinError::PdfCorruptedData          // Hidden data is corrupted

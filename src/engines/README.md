@@ -17,6 +17,7 @@ This directory contains steganography engines for different file formats.
 - **Limitations**:
   - Easily detectable
   - Not truly "hidden" - just stored in out-of-bounds
+  - Stealth mode not yet implemented; `embed(.., EmbedMode::Stealth)` returns `StealthNotSupported` (see the engine's doc comment for what a real PDF stealth mode would require)
 
 ### PNG Engine (`png.rs`)
 
@@ -31,6 +32,7 @@ This directory contains steganography engines for different file formats.
 - **Limitations**:
   - Easily detectable (visible in chunk list and hex editor)
   - Not truly "hidden" - just stored in metadata
+  - Stealth mode not yet implemented; `embed(.., EmbedMode::Stealth)` returns `StealthNotSupported`
 
 ### JPEG Engine (`jpeg.rs`)
 
@@ -45,6 +47,7 @@ This directory contains steganography engines for different file formats.
 - **Limitations**:
   - Easily detectable (visible in segment list and hex editor)
   - Not truly "hidden" - just stored in metadata
+  - Stealth mode not yet implemented; `embed(.., EmbedMode::Stealth)` returns `StealthNotSupported`
 
 ## Adding New Engines
 
@@ -55,10 +58,13 @@ This directory contains steganography engines for different file formats.
        fn magic_bytes(&self) -> &[u8];     // File format signature
        fn format_name(&self) -> &str;       // Human-readable name
        fn format_ext(&self) -> &str;        // File extension
-       fn embed(&self, source_data: &[u8], payload: &[u8]) -> Result<Vec<u8>>;
+       fn embed(&self, source_data: &[u8], payload: &[u8], mode: EmbedMode) -> Result<Vec<u8>>;
        fn extract(&self, source_data: &[u8]) -> Result<Vec<u8>>;
    }
    ```
+   If a mode isn't supported, return `LupinError::StealthNotSupported { format: "YourFormat" }`
+   rather than silently falling back to the other mode. `extract` must autodetect regardless
+   of which mode produced the file (no mode is passed in).
 3. Add the engine to `mod.rs` exports
 4. Register it in `lib.rs` EngineRouter::new()
 

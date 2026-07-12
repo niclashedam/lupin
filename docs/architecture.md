@@ -76,10 +76,14 @@ The modular architecture makes it easy to add support for new file formats:
        fn magic_bytes(&self) -> &[u8] { b"MAGIC" }
        fn format_name(&self) -> &str { "YourFormat" }
        fn format_ext(&self) -> &str { ".your" }
-       fn embed(&self, source: &[u8], payload: &[u8]) -> Result<Vec<u8>> { ... }
+       fn embed(&self, source: &[u8], payload: &[u8], mode: EmbedMode) -> Result<Vec<u8>> { ... }
        fn extract(&self, source: &[u8]) -> Result<Vec<u8>> { ... }
    }
    ```
+   `embed` receives an `EmbedMode` (`Capacity` or `Stealth`); return
+   `LupinError::StealthNotSupported { format: "YourFormat" }` if a mode isn't implemented
+   yet, rather than silently using the other mode. `extract` has no mode parameter — it
+   must autodetect which mode produced the file it's given.
 3. **Register the engine** in `EngineRouter::new()` in `lib.rs`
 
 The CLI and detection logic pick up new engines automatically, no further changes needed.
