@@ -9,11 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **MKV steganography engine** - Adds Matroska (`.mkv`) and WebM support, detected via the EBML header magic bytes. Stores the payload behind a `Lupin\0` signature in an EBML `Void` element appended as the last child inside the Segment. `Void` is the spec's reserved/padding primitive that every conformant reader skips, so media streams and playback are untouched. Because Matroska seek indexes (`SeekHead`/`Cues`) are Segment-relative, appending after all existing children preserves every offset; the Segment size field is rewritten for known-size Segments and left alone for unknown-size ones. New `LupinError::MkvInvalidFormat` and `LupinError::MkvNoHiddenData` variants.
 - **Embed mode selector (`--capacity` / `--stealth`)** - `lupin embed` and `operations::embed()` now take an `EmbedMode` that chooses the embedding strategy. `Capacity` (the default) is the existing behavior: unlimited payload size, easily detected by a `strings`/hex-dump pass. `Stealth` is reserved for a future low-detectability strategy; no engine implements it yet, so requesting it returns the new `LupinError::StealthNotSupported { format }` rather than silently falling back to capacity. `EmbedMode` is `#[non_exhaustive]`, so further modes can be added later without a breaking change.
 
 ### Changed
 
 - **BREAKING: `embed` now takes an `EmbedMode` argument.** `operations::embed(source, payload)` becomes `operations::embed(source, payload, mode)`, and `SteganographyEngine::embed` gains the same parameter. Pass `EmbedMode::Capacity` to preserve the previous behavior. `operations::extract()` and `SteganographyEngine::extract` are unchanged and detect the payload automatically without being told the mode.
+
+### Supported Formats
+
+- **MKV** - Appends the raw payload behind a `Lupin\0` signature in an EBML `Void` element inside the Segment (unlimited capacity, playback unaffected, somewhat easily detectable); also handles WebM
 
 ## [1.1.0] - 2026-07-11
 

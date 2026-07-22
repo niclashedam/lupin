@@ -15,10 +15,12 @@
 //! Steganography engines for different file formats
 
 pub mod jpeg;
+pub mod mkv;
 pub mod pdf;
 pub mod png;
 
 // Re-export engines for convenience
 pub use jpeg::JpegEngine;
+pub use mkv::MkvEngine;
 pub use pdf::PdfEngine;
 pub use png::PngEngine;

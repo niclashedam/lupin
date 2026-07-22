@@ -49,6 +49,24 @@ This directory contains steganography engines for different file formats.
   - Not truly "hidden" - just stored in metadata
   - Stealth mode not yet implemented; `embed(.., EmbedMode::Stealth)` returns `StealthNotSupported`
 
+### MKV Engine (`mkv.rs`)
+
+**Technique**: EBML `Void` element inside the Segment
+
+- **How it works**: Matroska/WebM files are EBML documents (a tree of `[ID][size][data]` elements). This engine appends a `Void` element (ID `0xEC`) as the last child *inside* the top-level `Segment`, storing a `Lupin\0` signature followed by the raw payload. `Void` is the EBML primitive for reserved/padding space, so the spec requires every conformant reader (VLC, ffmpeg, mkvtoolnix) to skip it — playback is unaffected.
+- **Detection**: Looks for the EBML header magic bytes `\x1A\x45\xDF\xA3` at the start of the file (shared by Matroska and WebM)
+- **Capacity**: Unlimited (adds a `Void` element to the file)
+  - File size increases by payload size plus a small element header (ID + size VINT + 6-byte signature)
+- **Visibility**: Media streams are untouched; the file plays normally
+- **Format**: `[1 byte: 0xEC][VINT: Length][6 bytes: "Lupin\0"][N bytes: Raw Payload]`
+- **Why it's safe for every file** (unlike a naive append after the file):
+  - **Offsets preserved**: `SeekHead`/`Cues` index elements by *Segment-relative* position. Inserting the `Void` after all existing children leaves every stored position valid; even when the Segment size field must widen, all children shift together so their relative offsets are unchanged.
+  - **Both Segment size forms handled**: for a known-size Segment the size field is rewritten to include the `Void`; for an "unknown size" Segment (all VINT value bits set, runs to EOF) the appended `Void` naturally falls inside it and no size is changed.
+- **Limitations**:
+  - Detectable (a `Void` element and the payload are visible in a hex editor or `mkvinfo`)
+  - Not truly "hidden" - just stored in a skippable element
+  - Stealth mode not yet implemented; `embed(.., EmbedMode::Stealth)` returns `StealthNotSupported`
+
 ## Adding New Engines
 
 1. Create a new file (e.g., `myformat.rs`)
