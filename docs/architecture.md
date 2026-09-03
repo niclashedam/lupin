@@ -48,6 +48,7 @@ lupin/
 │       ├── pdf.rs           # PDF steganography engine
 │       ├── png.rs           # PNG steganography engine (ancillary chunks)
 │       ├── jpeg.rs          # JPEG steganography engine (APP13 marker)
+│       ├── mkv.rs           # MKV steganography engine (EBML Void element)
 │       └── README.md        # Guide for adding new engines
 ├── examples/
 │   ├── cat.pdf              # Sample PDF for testing

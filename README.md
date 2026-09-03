@@ -16,8 +16,9 @@ Lupin is named after [Arsène Lupin](https://en.wikipedia.org/wiki/Ars%C3%A8ne_L
 - **PDF**: Appends data after the `%%EOF` marker (unlimited capacity, easily detectable)
 - **PNG**: Custom ancillary chunks (unlimited capacity, zero visual artifacts, somewhat easily detectable)
 - **JPEG**: Signed APP13 application markers, split across segments as needed (unlimited capacity, zero visual artifacts, somewhat easily detectable)
+- **MKV**: Signed EBML `Void` element inside the Segment (unlimited capacity, playback unaffected, somewhat easily detectable); also handles WebM
 
-All three engines currently optimize for **capacity**: unlimited size, but easy to spot with `strings`. The CLI and API carry an `--capacity` / `--stealth` selector for a future low-detectability strategy; no engine implements `--stealth` yet, so requesting it returns a clear error. See the [CLI](docs/cli.md) and [library](docs/library.md) guides.
+All four engines currently optimize for **capacity**: unlimited size, but easy to spot with `strings`. The CLI and API carry an `--capacity` / `--stealth` selector for a future low-detectability strategy; no engine implements `--stealth` yet, so requesting it returns a clear error. See the [CLI](docs/cli.md) and [library](docs/library.md) guides.
 
 ## Quick Start
 

@@ -17,7 +17,7 @@ pub mod engines;
 pub mod error;
 pub mod operations;
 
-use crate::engines::{JpegEngine, PdfEngine, PngEngine};
+use crate::engines::{JpegEngine, MkvEngine, PdfEngine, PngEngine};
 use crate::error::Result;
 use std::io;
 
@@ -73,6 +73,7 @@ impl EngineRouter {
                 Box::new(PdfEngine::new()),
                 Box::new(PngEngine::new()),
                 Box::new(JpegEngine::new()),
+                Box::new(MkvEngine::new()),
             ],
         }
     }

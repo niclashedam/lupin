@@ -39,6 +39,12 @@ lupin embed photo.png message.txt stego_photo.png
 lupin embed photo.jpg message.txt stego_photo.jpg
 ```
 
+**MKV files** (uses a signed EBML `Void` element inside the Segment, playback unaffected; also handles WebM):
+
+```bash
+lupin embed video.mkv message.txt stego_video.mkv
+```
+
 ### Choosing capacity vs. stealth
 
 `lupin embed` accepts a mode flag:

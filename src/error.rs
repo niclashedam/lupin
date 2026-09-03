@@ -109,6 +109,13 @@ pub enum LupinError {
     #[error("No hidden data found in JPEG")]
     JpegNoHiddenData,
 
+    /// MKV/Matroska-specific errors
+    #[error("Invalid MKV format: {reason}")]
+    MkvInvalidFormat { reason: String },
+
+    #[error("No hidden data found in MKV")]
+    MkvNoHiddenData,
+
     /// Generic I/O error for cases where automatic conversion is desired
     #[error("I/O operation failed")]
     Io {
