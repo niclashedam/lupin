@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-03
+
 ### Added
 
 - **MKV steganography engine** - Adds Matroska (`.mkv`) and WebM support, detected via the EBML header magic bytes. Stores the payload behind a `Lupin\0` signature in an EBML `Void` element appended as the last child inside the Segment. `Void` is the spec's reserved/padding primitive that every conformant reader skips, so media streams and playback are untouched. Because Matroska seek indexes (`SeekHead`/`Cues`) are Segment-relative, appending after all existing children preserves every offset; the Segment size field is rewritten for known-size Segments and left alone for unknown-size ones. New `LupinError::MkvInvalidFormat` and `LupinError::MkvNoHiddenData` variants.
@@ -19,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Supported Formats
 
 - **MKV** - Appends the raw payload behind a `Lupin\0` signature in an EBML `Void` element inside the Segment (unlimited capacity, playback unaffected, somewhat easily detectable); also handles WebM
+
+[1.2.0]: https://github.com/niclashedam/lupin/releases/tag/v1.2.0
 
 ## [1.1.0] - 2026-07-11
 
