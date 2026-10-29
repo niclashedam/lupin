@@ -6,7 +6,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-lupin = "1.0"
+lupin = { version = "1", default-features = false }
 ```
 
 ## Quick Start

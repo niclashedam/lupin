@@ -2,7 +2,7 @@
 name = "lupin"
 version = "1.2.0"
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.88"
 description = "A blazing-fast, lightweight steganography tool for concealing secret data within normal files."
 license = "Apache-2.0"
 repository = "https://github.com/niclashedam/lupin"
@@ -12,11 +12,12 @@ readme = "README.md"
 keywords = ["steganography", "pdf", "privacy", "cli", "security"]
 categories = ["command-line-utilities", "cryptography"]
 authors = ["Niclas Hedam <lupin@sl.hed.am>"]
-exclude = ["/examples", "/target", "*.pdf"]
+exclude = ["/.github", "/examples", "/target", "/web", "*.pdf"]
 
 [[bin]]
 name = "lupin"
 path = "src/main.rs"
+required-features = ["cli"]
 
 [lib]
 name = "lupin"
@@ -24,7 +25,11 @@ path = "src/lib.rs"
 
 [dependencies]
 base64 = "0.22"
-clap = { version = "4.5", features = ["derive"] }
+clap = { version = "4.5", features = ["derive"], optional = true }
 log = { version = "0.4", features = ["std"] }
-simplelog = "0.12"
+simplelog = { version = "0.12", optional = true }
 thiserror = "2"
+
+[features]
+default = ["cli"]
+cli = ["dep:clap", "dep:simplelog"]

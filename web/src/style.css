@@ -1,0 +1,40 @@
+@import "tailwindcss";
+@import "@fontsource-variable/instrument-sans";
+@import "@fontsource/commit-mono/400.css";
+
+@theme {
+  --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Commit Mono", ui-monospace, monospace;
+  --color-paper: #f4f5f7;
+  --color-ink: #1a1f2b;
+  --color-rule: #c9cdd6;
+  --color-muted: #5b6272;
+  /* Highlighter: only ever marks Lupin's bytes, always with dark ink on top */
+  --color-mark: #f2ec3a;
+  --color-mark-ink: #1a1f2b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-paper: #141821;
+    --color-ink: #e4e7ee;
+    --color-rule: #343b4a;
+    --color-muted: #9aa1b0;
+  }
+}
+
+@keyframes sweep {
+  to {
+    background-size: 100% 100%;
+  }
+}
+
+/* The one animation: the highlighter passes over the payload rows after embedding */
+@media (prefers-reduced-motion: no-preference) {
+  .sweep .mark {
+    background: linear-gradient(var(--color-mark), var(--color-mark)) no-repeat;
+    background-size: 0 100%;
+    animation: sweep 0.12s linear forwards;
+    animation-delay: calc(var(--i) * 6ms);
+  }
+}

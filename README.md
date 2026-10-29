@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/niclashedam/lupin/actions/workflows/ci.yml/badge.svg?branch=master)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
-![Rust](https://img.shields.io/badge/rust-1.70%2B-red.svg)
+![Rust](https://img.shields.io/badge/rust-1.88%2B-red.svg)
 ![Crates.io](https://img.shields.io/crates/v/lupin.svg)
 
 A blazing-fast, lightweight steganography tool for concealing data inside normal-looking files. Lupin can be used as a CLI tool for quick operations or as a Rust library for integration into your applications.
@@ -47,7 +47,7 @@ More info in the [CLI Guide](docs/cli.md).
 ```toml
 # Cargo.toml
 [dependencies]
-lupin = "1.0"
+lupin = { version = "1", default-features = false }
 ```
 
 ```rust
@@ -67,6 +67,19 @@ let (extracted, info) = extract(&embedded_data)?;
 ```
 
 More info in the [Library Guide](docs/library.md).
+
+### Website
+
+`web/` is a static site that runs the crate as WebAssembly in the browser. `.github/workflows/web.yml` deploys it to Cloudflare Workers static assets on every push to `master`. The workflow needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets; create the token from Cloudflare's "Edit Cloudflare Workers" template, and register a workers.dev subdomain for the account before the first deploy. Building the site needs Node 22 or newer and the `wasm32-unknown-unknown` Rust target.
+
+```bash
+cd web
+npm install
+npm run dev     # builds the WebAssembly package, then starts Vite
+npm test        # checks the structure view against examples/
+npm run build   # outputs web/dist
+npm run e2e     # browser tests against web/dist, served by Wrangler
+```
 
 ## Documentation
 
