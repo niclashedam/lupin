@@ -12,7 +12,7 @@ readme = "README.md"
 keywords = ["steganography", "pdf", "privacy", "cli", "security"]
 categories = ["command-line-utilities", "cryptography"]
 authors = ["Niclas Hedam <lupin@sl.hed.am>"]
-exclude = ["/examples", "/target", "*.pdf"]
+exclude = ["/.github", "/examples", "/target", "/web", "*.pdf"]
 
 [[bin]]
 name = "lupin"

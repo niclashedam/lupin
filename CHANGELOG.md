@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Website** - `web/` holds a static site that runs the crate compiled to WebAssembly, so files never leave the browser. It shows the file's structure with Lupin's bytes highlighted. GitHub Actions deploys it to Cloudflare Workers static assets on every push to `master`. The WebAssembly bindings live in the unpublished `web/wasm` crate, so the published crate gains no `cdylib` target.
+
 ### Changed
 
 - **`cli` feature** - `clap` and `simplelog` are now optional dependencies behind a default `cli` feature that the `lupin` binary requires. Library users can set `default-features = false` to drop them; `cargo install lupin` is unchanged.

@@ -61,6 +61,7 @@ lupin/
 │   ├── out.mkv              # Sample output MKV after embedding message.txt
 │   └── message.txt          # Sample payload file
 ├── docs/                    # Documentation
+├── web/                     # Website: runs the crate as WebAssembly (web/wasm)
 └── .github/workflows/       # CI/CD pipelines
 ```
 

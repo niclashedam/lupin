@@ -1,0 +1,7 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lupin",
+  "compatibility_date": "2026-10-01",
+  // Static assets only: no Worker script, everything runs in the browser.
+  "assets": { "directory": "./dist" }
+}

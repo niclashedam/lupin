@@ -1,0 +1,7 @@
+node_modules
+dist
+pkg
+.wrangler
+test-results
+playwright-report
+wasm/target

@@ -1,0 +1,25 @@
+{
+  "name": "lupin-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "wasm": "wasm-pack build wasm --target web --out-dir ../pkg --out-name lupin --no-pack --release",
+    "dev": "npm run wasm && vite",
+    "build": "npm run wasm && tsc --noEmit && vite build",
+    "test": "node --experimental-strip-types --test src/structure.test.ts",
+    "deploy": "wrangler deploy",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@fontsource-variable/instrument-sans": "^5.3.0",
+    "@fontsource/commit-mono": "^5.3.0",
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.6",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "wasm-pack": "^0.15.0",
+    "wrangler": "^4.155.0"
+  }
+}
