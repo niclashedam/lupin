@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MKV embed into a cover with an overrunning carrier** - A Lupin `Void` that ran past the Segment's declared end was missed by the collision check, then fell inside the grown Segment and shadowed the new payload on extract. Embedding now reports a collision.
 - **PDF payload with trailing whitespace** - Extraction now ignores whitespace after the Base64 payload, such as a newline added by a text editor, instead of reporting corrupted data.
 - **PNG payloads over the chunk size limit** - Embedding now refuses payloads whose Base64 form exceeds the PNG chunk length limit of 2^31 - 1 bytes, instead of writing an invalid length.
+- **`examples/out.jpg`** - Regenerated with the signed APP13 format. The old file predated the `Lupin\0` signature, so Lupin could not extract its data.
 
 ## [1.2.0] - 2026-09-03
 
