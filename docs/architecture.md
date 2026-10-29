@@ -57,6 +57,8 @@ lupin/
 │   ├── out.png              # Sample output PNG after embedding message.txt
 │   ├── cat.jpg              # Sample JPEG for testing
 │   ├── out.jpg              # Sample output JPEG after embedding message.txt
+│   ├── cat.mkv              # Sample MKV for testing
+│   ├── out.mkv              # Sample output MKV after embedding message.txt
 │   └── message.txt          # Sample payload file
 ├── docs/                    # Documentation
 └── .github/workflows/       # CI/CD pipelines
@@ -64,7 +66,7 @@ lupin/
 
 ## Errors and Logging
 
-Errors are structured with `thiserror`, giving each failure mode its own variant and context (see [error.rs](../src/error.rs)). Logging goes through `simplelog`, with independent debug/info/warn/error levels controlled by the CLI flags described in the [CLI Guide](cli.md).
+Errors are structured with `thiserror`, giving each failure mode its own variant and context (see [error.rs](../src/error.rs)). The library logs through the `log` facade; the CLI installs `simplelog`, with independent debug/info/warn/error levels controlled by the CLI flags described in the [CLI Guide](cli.md).
 
 ## Adding New File Format Support
 

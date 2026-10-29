@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`cli` feature** - `clap` and `simplelog` are now optional dependencies behind a default `cli` feature that the `lupin` binary requires. Library users can set `default-features = false` to drop them; `cargo install lupin` is unchanged.
+
 ### Fixed
 
 - **Hostile PNG and MKV sizes on 32-bit targets** - Chunk and element sizes are now added with overflow checks and bounded by the file length. On 32-bit targets such as `wasm32`, a crafted size could wrap the offset and loop forever, truncate on conversion from `u64`, or panic on an out-of-range slice.

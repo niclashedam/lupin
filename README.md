@@ -47,7 +47,7 @@ More info in the [CLI Guide](docs/cli.md).
 ```toml
 # Cargo.toml
 [dependencies]
-lupin = "1.0"
+lupin = { version = "1", default-features = false }
 ```
 
 ```rust

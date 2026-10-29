@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Hide data inside PDF, PNG, JPEG and MKV/WebM files.
+//!
+//! The default `cli` feature only builds the `lupin` binary. Library users can depend on
+//! `lupin = { version = "1", default-features = false }` to skip `clap` and `simplelog`.
+
 // Module declarations
 pub mod engines;
 pub mod error;
