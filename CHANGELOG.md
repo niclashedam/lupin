@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-29
+
 ### Added
 
 - **Website** - `web/` holds a static site that runs the crate compiled to WebAssembly, so files never leave the browser. It shows the file's structure with Lupin's bytes highlighted. GitHub Actions deploys it to Cloudflare Workers static assets on every push to `master`. The WebAssembly bindings live in the unpublished `web/wasm` crate, so the published crate gains no `cdylib` target.
@@ -15,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`cli` feature** - `clap` and `simplelog` are now optional dependencies behind a default `cli` feature that the `lupin` binary requires. Library users can set `default-features = false` to drop them; `cargo install lupin` is unchanged.
 - **Minimum Rust version is now 1.88** - The previous `rust-version = "1.70"` no longer held for the default build: `clap` 4.6 needs 1.85 and `time` (via `simplelog`) needs 1.88.
+- Updated dependencies, including `base64` 0.23 and `thiserror` 2.0.21, which clippy 1.99 requires.
 
 ### Fixed
 
@@ -23,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PDF payload with trailing whitespace** - Extraction now ignores whitespace after the Base64 payload, such as a newline added by a text editor, instead of reporting corrupted data.
 - **PNG payloads over the chunk size limit** - Embedding now refuses payloads whose Base64 form exceeds the PNG chunk length limit of 2^31 - 1 bytes, instead of writing an invalid length.
 - **`examples/out.jpg`** - Regenerated with the signed APP13 format. The old file predated the `Lupin\0` signature, so Lupin could not extract its data.
+
+[1.3.0]: https://github.com/niclashedam/lupin/releases/tag/v1.3.0
 
 ## [1.2.0] - 2026-09-03
 
