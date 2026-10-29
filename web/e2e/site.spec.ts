@@ -198,3 +198,13 @@ test("moves focus to the result after loading and uses 8-byte rows on phones", a
     })
     .toBe(16);
 });
+
+test("serves HTML with no-transform and assets as immutable", async ({ request }) => {
+  // no-transform stops Cloudflare injecting scripts that the CSP would block
+  for (const path of ["/", "/index.html"]) {
+    expect((await request.get(path)).headers()["cache-control"]).toBe("public, max-age=0, must-revalidate, no-transform");
+  }
+  const html = await (await request.get("/")).text();
+  const asset = html.match(/src="(\/assets\/[^"]+\.js)"/)![1];
+  expect((await request.get(asset)).headers()["cache-control"]).toBe("public, max-age=31536000, immutable");
+});
