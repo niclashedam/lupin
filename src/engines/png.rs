@@ -123,6 +123,15 @@ impl PngEngine {
         crc ^ Self::CRC32_FINAL_XOR
     }
 
+    /// Returns the offset of the chunk after the one at `pos`, or `None` if it would lie past
+    /// the end of the data. Checked so a hostile length cannot overflow `usize` (32 bits on
+    /// wasm32), and bounded so the callers' `pos + 8` cannot overflow either.
+    fn next_chunk(pos: usize, chunk_length: usize, data_len: usize) -> Option<usize> {
+        pos.checked_add(4 + 4 + 4)?
+            .checked_add(chunk_length)
+            .filter(|&next| next <= data_len)
+    }
+
     /// Finds the position of the IEND chunk (end of PNG)
     ///
     /// We need to insert our custom chunk before IEND.
@@ -140,7 +149,10 @@ impl PngEngine {
             }
 
             // Move to next chunk: 4 (length) + 4 (type) + data + 4 (CRC)
-            pos += 4 + 4 + chunk_length + 4;
+            pos = match Self::next_chunk(pos, chunk_length, data.len()) {
+                Some(next) => next,
+                None => break,
+            };
         }
 
         Err(LupinError::PngNoIendChunk)
@@ -186,7 +198,10 @@ impl PngEngine {
             }
 
             // Move to next chunk
-            pos += 4 + 4 + chunk_length + 4;
+            pos = match Self::next_chunk(pos, chunk_length, data.len()) {
+                Some(next) => next,
+                None => break,
+            };
 
             // Stop at IEND
             if current_chunk_type == b"IEND" {
@@ -210,11 +225,16 @@ impl PngEngine {
             if current_chunk_type == chunk_type {
                 // Found our chunk, extract the data
                 let data_start = pos + 8;
-                let data_end = data_start + chunk_length;
-
-                if data_end + 4 > data.len() {
-                    return Err(LupinError::PngNoHiddenData);
-                }
+                let data_end = match data_start.checked_add(chunk_length) {
+                    Some(end)
+                        if end
+                            .checked_add(4)
+                            .is_some_and(|crc_end| crc_end <= data.len()) =>
+                    {
+                        end
+                    }
+                    _ => return Err(LupinError::PngNoHiddenData),
+                };
 
                 // Verify CRC
                 let chunk_data = &data[data_start..data_end];
@@ -234,7 +254,10 @@ impl PngEngine {
             }
 
             // Move to next chunk
-            pos += 4 + 4 + chunk_length + 4;
+            pos = match Self::next_chunk(pos, chunk_length, data.len()) {
+                Some(next) => next,
+                None => break,
+            };
 
             // Stop at IEND
             if current_chunk_type == b"IEND" {
@@ -295,6 +318,16 @@ impl SteganographyEngine for PngEngine {
 
         // Encode payload as Base64 to avoid any binary issues in the chunk
         let encoded_payload = BASE64.encode(payload);
+
+        // The PNG specification caps chunk lengths at 2^31 - 1
+        if encoded_payload.len() > 0x7FFF_FFFF {
+            return Err(LupinError::EmbedFailed {
+                source: std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    "payload too large for a PNG chunk",
+                ),
+            });
+        }
 
         // Create our custom steganography chunk with Base64-encoded data
         let steg_chunk = Self::create_chunk(Self::LUPIN_CHUNK_TYPE, encoded_payload.as_bytes());
@@ -562,5 +595,20 @@ mod tests {
             result,
             Err(LupinError::StealthNotSupported { format: "PNG" })
         ));
+    }
+
+    #[test]
+    fn test_chunk_lengths_near_usize_max_return_errors() {
+        // On 32-bit targets these lengths put the next offset at usize::MAX, which used to
+        // overflow `pos + 8` and panic.
+        for (length, chunk_type) in [(0xFFFF_FFEBu32, b"IHDR"), (0xFFFF_FFEF, b"lpNg")] {
+            let mut png = b"\x89PNG\r\n\x1a\n".to_vec();
+            png.extend_from_slice(&length.to_be_bytes());
+            png.extend_from_slice(chunk_type);
+            png.extend_from_slice(&[0; 32]);
+            let engine = PngEngine::new();
+            assert!(engine.extract(&png).is_err());
+            assert!(engine.embed(&png, b"x", EmbedMode::Capacity).is_err());
+        }
     }
 }

@@ -178,6 +178,12 @@ impl MkvEngine {
         }
     }
 
+    /// Returns `base + size`, or `None` if it does not fit in `usize`. On wasm32 `usize` is
+    /// 32 bits, so a plain `as usize` would truncate a hostile size and wrapping could loop forever.
+    fn offset(base: usize, size: u64) -> Option<usize> {
+        usize::try_from(size).ok()?.checked_add(base)
+    }
+
     /// Locates the top-level `Segment`, skipping the EBML Header (and any top-level `Void`/
     /// `CRC-32` padding that may precede the Segment).
     fn find_segment(data: &[u8]) -> Result<SegmentInfo> {
@@ -190,7 +196,8 @@ impl MkvEngine {
         if unknown {
             return Err(Self::malformed("EBML header has unknown size"));
         }
-        let mut pos = id_width + size_width + header_size as usize;
+        let mut pos = Self::offset(id_width + size_width, header_size)
+            .ok_or_else(|| Self::malformed("EBML header size overflows"))?;
 
         // Walk top-level elements until we reach the Segment.
         loop {
@@ -206,11 +213,10 @@ impl MkvEngine {
                 let data_end = if unknown_size {
                     data.len()
                 } else {
-                    let end = data_start + size as usize;
-                    if end > data.len() {
-                        return Err(Self::malformed("Segment size exceeds file length"));
+                    match Self::offset(data_start, size) {
+                        Some(end) if end <= data.len() => end,
+                        _ => return Err(Self::malformed("Segment size exceeds file length")),
                     }
-                    end
                 };
                 return Ok(SegmentInfo {
                     size_field_pos,
@@ -225,7 +231,8 @@ impl MkvEngine {
             if unknown_size {
                 return Err(Self::malformed("unknown-size element before Segment"));
             }
-            pos = data_start + size as usize;
+            pos = Self::offset(data_start, size)
+                .ok_or_else(|| Self::malformed("element size overflows"))?;
         }
     }
 
@@ -262,9 +269,11 @@ impl MkvEngine {
                     if let Ok((size, _, false)) = Self::read_size(data, size_field_pos) {
                         // The Void data begins at `i`; its declared size covers signature +
                         // payload and must not run past the Segment.
-                        let payload_end = i + size as usize;
-                        if size as usize >= sig.len() && payload_end <= end {
-                            return Some((i + sig.len(), payload_end));
+                        match Self::offset(i, size) {
+                            Some(payload_end) if size >= sig.len() as u64 && payload_end <= end => {
+                                return Some((i + sig.len(), payload_end));
+                            }
+                            _ => {}
                         }
                     }
                 }
@@ -325,7 +334,9 @@ impl SteganographyEngine for MkvEngine {
 
         // Refuse to embed into an MKV that already carries a Lupin Void; a second carrier
         // would be appended and silently lost on extract (which returns the first match).
-        if Self::find_carrier(source_data, segment.data_start, segment.data_end).is_some() {
+        // Search to the end of the file, not the Segment: a carrier that overruns the Segment
+        // would otherwise be missed here, then fall inside the grown Segment and shadow ours.
+        if Self::find_carrier(source_data, segment.data_start, source_data.len()).is_some() {
             return Err(LupinError::EmbedCollision {
                 source: std::io::Error::new(
                     std::io::ErrorKind::AlreadyExists,
@@ -632,5 +643,19 @@ mod tests {
         let result = engine.extract(&header_only);
 
         assert!(matches!(result, Err(LupinError::MkvInvalidFormat { .. })));
+    }
+
+    #[test]
+    fn test_embed_rejects_carrier_overrunning_segment() {
+        // A Lupin Void that runs past the Segment's declared end would fall inside the
+        // grown Segment after embedding and shadow the new payload on extract.
+        let cover = [
+            0x1a, 0x45, 0xdf, 0xa3, 0x84, 0x42, 0x82, 0x01, 0x02, // EBML header
+            0x18, 0x53, 0x80, 0x67, 0x91, // Segment, size 17
+            0x1f, 0x43, 0xb6, 0x75, 0x83, 0x01, 0x02, 0x03, // Cluster
+            0xec, 0x88, b'L', b'u', b'p', b'i', b'n', 0x00, b'A', b'B', // Void, overruns
+        ];
+        let result = MkvEngine::new().embed(&cover, b"X", EmbedMode::Capacity);
+        assert!(matches!(result, Err(LupinError::EmbedCollision { .. })));
     }
 }
