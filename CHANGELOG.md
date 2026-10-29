@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **`cli` feature** - `clap` and `simplelog` are now optional dependencies behind a default `cli` feature that the `lupin` binary requires. Library users can set `default-features = false` to drop them; `cargo install lupin` is unchanged.
+- **Minimum Rust version is now 1.88** - The previous `rust-version = "1.70"` no longer held for the default build: `clap` 4.6 needs 1.85 and `time` (via `simplelog`) needs 1.88.
 
 ### Fixed
 

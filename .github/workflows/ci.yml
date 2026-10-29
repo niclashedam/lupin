@@ -103,6 +103,20 @@ jobs:
             echo "❌ CLI extraction test failed - extracted content doesn't match original"
             exit 1
           fi
+  msrv:
+    name: Minimum Rust version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust 1.88
+        uses: dtolnay/rust-toolchain@1.88
+
+      - name: Run tests
+        run: cargo test --locked
+
   cross-platform:
     name: Cross Platform Build
     strategy:
