@@ -118,19 +118,20 @@ impl SteganographyEngine for PdfEngine {
         let payload_start = eof_pos + eof_marker.len();
         let payload = &source_data[payload_start..];
 
-        // Skip whitespace after %%EOF
-        let payload: Vec<u8> = payload
-            .iter()
-            .skip_while(|&&b| b.is_ascii_whitespace())
-            .copied()
-            .collect();
+        // Trim whitespace around the payload, e.g. a newline added by a text editor
+        let start = payload.iter().position(|b| !b.is_ascii_whitespace());
+        let end = payload.iter().rposition(|b| !b.is_ascii_whitespace());
+        let payload = match (start, end) {
+            (Some(start), Some(end)) => &payload[start..=end],
+            _ => &[][..],
+        };
 
         if payload.is_empty() {
             return Err(LupinError::PdfNoHiddenData);
         }
 
         general_purpose::STANDARD
-            .decode(&payload)
+            .decode(payload)
             .map_err(|_| LupinError::PdfCorruptedData)
     }
 }
@@ -438,5 +439,11 @@ mod tests {
             result,
             Err(LupinError::StealthNotSupported { format: "PDF" })
         ));
+    }
+
+    #[test]
+    fn test_extract_ignores_trailing_whitespace() {
+        let pdf = b"%PDF-1.4\n%%EOF\naGk=\n";
+        assert_eq!(PdfEngine::new().extract(pdf).unwrap(), b"hi");
     }
 }
