@@ -127,6 +127,18 @@ test("choosing the same file twice loads it again", async ({ page }) => {
   await expect(page.locator("#file")).toHaveValue("");
 });
 
+test("a hide cannot go to the previous file while a new one loads", async ({ page }) => {
+  await page.getByRole("button", { name: "cat.png" }).click();
+  await expect(page.locator("#hide")).toBeVisible();
+  await page.route("**/cat-*.pdf", async (route) => {
+    await new Promise((r) => setTimeout(r, 1000));
+    await route.continue();
+  });
+  await page.getByRole("button", { name: "cat.pdf" }).click();
+  await expect(page.locator("#hide")).toBeHidden();
+  await expect(page.locator("#status")).toContainText("Lupin found no hidden data in cat.pdf");
+});
+
 test("resets the form and moves focus to the result after hiding", async ({ page }) => {
   await page.getByRole("button", { name: "cat.png" }).click();
   await page.getByLabel("A file").check();

@@ -59,6 +59,9 @@ function asText(data: Uint8Array): string | null {
 /** Loads a file once its bytes are read; `read` is awaited here so a newer load wins */
 async function load(name: string, read: () => Promise<ArrayBuffer>, size = 0) {
   const mine = ++seq;
+  // Stop a hide started now from embedding into the previous file
+  current = null;
+  show(form, false);
   let data: Uint8Array | null = null;
   let error = "";
   if (size > MAX_BYTES) {
