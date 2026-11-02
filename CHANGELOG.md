@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **PNG extraction** - A PNG with no IEND chunk now returns `PngNoIendChunk` instead of `PngNoHiddenData`, matching how PDF reports a missing `%%EOF`.
+
 ### Fixed
 
 - **Website** - Hiding data while a newly chosen file was still loading embedded it into the previous file.

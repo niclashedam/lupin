@@ -261,11 +261,12 @@ impl PngEngine {
 
             // Stop at IEND
             if current_chunk_type == b"IEND" {
-                break;
+                return Err(LupinError::PngNoHiddenData);
             }
         }
 
-        Err(LupinError::PngNoHiddenData)
+        // No IEND either, so this PNG cannot hold hidden data at all
+        Err(LupinError::PngNoIendChunk)
     }
 }
 
@@ -538,6 +539,24 @@ mod tests {
         match result {
             Err(LupinError::PngNoHiddenData) => (),
             other => panic!("Expected PngNoHiddenData error, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_extract_no_iend() {
+        // Arrange - PNG with only signature and IHDR, no IEND
+        let mut png = b"\x89PNG\r\n\x1a\n".to_vec();
+        png.extend_from_slice(&13u32.to_be_bytes());
+        png.extend_from_slice(b"IHDR");
+        png.extend_from_slice(&[0u8; 17]); // IHDR data and CRC
+
+        // Act
+        let result = PngEngine::new().extract(&png);
+
+        // Assert - A truncated PNG is reported as invalid, not as empty
+        match result {
+            Err(LupinError::PngNoIendChunk) => (),
+            other => panic!("Expected PngNoIendChunk error, got {:?}", other),
         }
     }
 
