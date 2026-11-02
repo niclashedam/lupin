@@ -106,8 +106,9 @@ async function load(name: string, read: () => Promise<ArrayBuffer>, size = 0) {
         show(form, true);
       }
     } catch (err) {
+      // For a cover Lupin cannot use, such as a PNG with no IEND, the structure note explains it better
+      status(usable ? `Lupin cannot read ${name} (${reason(err)}). Choose a different file.` : `${structure.insertNote} Choose a different file.`);
       usable = false;
-      status(`Lupin cannot read ${name} (${reason(err)}). Choose a different file.`);
     }
     render(name, structure, usable, false);
   }
