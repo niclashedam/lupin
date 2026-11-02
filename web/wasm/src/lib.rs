@@ -25,7 +25,7 @@ use wasm_bindgen::prelude::*;
 pub fn embed(source: &[u8], payload: &[u8]) -> Result<Vec<u8>, JsError> {
     operations::embed(source, payload, EmbedMode::Capacity)
         .map(|(data, _)| data)
-        .map_err(|e| JsError::new(&e.to_string()))
+        .map_err(js_error)
 }
 
 /// Extracts the hidden payload from `source`, or `undefined` if there is none
@@ -39,6 +39,15 @@ pub fn extract(source: &[u8]) -> Result<Option<Vec<u8>>, JsError> {
             | LupinError::JpegNoHiddenData
             | LupinError::MkvNoHiddenData,
         ) => Ok(None),
-        Err(e) => Err(JsError::new(&e.to_string())),
+        Err(e) => Err(js_error(e)),
+    }
+}
+
+fn js_error(e: LupinError) -> JsError {
+    match e {
+        LupinError::EngineDetection { .. } => {
+            JsError::new("not a PDF, PNG, JPEG, MKV or WebM file")
+        }
+        e => JsError::new(&e.to_string()),
     }
 }
