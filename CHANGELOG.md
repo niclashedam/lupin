@@ -9,12 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Website** - Simplified to the hide/reveal tool, installation instructions and a disclaimer. The file structure view, sample files and format table are gone.
 - **PNG extraction** - A PNG with no IEND chunk now returns `PngNoIendChunk` instead of `PngNoHiddenData`, matching how PDF reports a missing `%%EOF`.
 
-### Fixed
+### Removed
 
-- **Website** - Hiding data while a newly chosen file was still loading embedded it into the previous file.
+- **Website** - The WebAssembly website added in 1.3.0, along with its workflow, Dependabot entries and the unpublished `lupin-wasm` crate. The published crate is unchanged.
 
 ## [1.3.0] - 2026-10-29
 
