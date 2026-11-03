@@ -4,17 +4,6 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
-  - package-ecosystem: "cargo"
-    directory: "/web/wasm"
-    schedule:
-      interval: "monthly"
-  - package-ecosystem: "npm"
-    directory: "/web"
-    schedule:
-      interval: "monthly"
-    groups:
-      web:
-        patterns: ["*"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
